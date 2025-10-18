@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       })),
       cached: false,
     });
-  } catch (e) {
+  } catch {
     const body = await req.json().catch(() => null);
     const seed = body?.seed ?? "";
     const problemId = body?.problemId ?? "";

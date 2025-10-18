@@ -67,7 +67,8 @@ export function selectProblemForSeed(seed: string): Problem {
 }
 
 export function sanitizeProblem(problem: Problem): Omit<Problem, "answer"> {
-  const { answer: _omit, ...rest } = problem;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { answer, ...rest } = problem;
   return rest;
 }
 

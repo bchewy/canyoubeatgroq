@@ -91,7 +91,7 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
         </label>
       </div>
       <div className="w-full max-w-xl">
-        <h2 className="font-semibold mb-2 text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)]">Today's Top 10</h2>
+        <h2 className="font-semibold mb-2 text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)]">Today&apos;s Top 10</h2>
         <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm" role="list">
           {filteredEntries.length === 0 ? (
             <div className="p-4 text-sm text-white/80">Be first. Set the pace.</div>

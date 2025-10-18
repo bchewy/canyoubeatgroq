@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const expiresAt = issuedAtMs + 35_000;
     // No KV cache; problem can be deterministically reconstructed from seed + id if needed
     return NextResponse.json({ problem: sanitizeProblem(problem), startToken, seed, topic, expiresAt });
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 }

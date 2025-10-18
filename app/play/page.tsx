@@ -86,7 +86,7 @@ function PlayPageContent() {
       .then((aiData) => {
         if (aiData.results) {
           // Convert to ModelResult format
-          cachedAiResultsRef.current = aiData.results.map((r: any) => ({
+          cachedAiResultsRef.current = aiData.results.map((r: { model: string; provider?: string; aiTimeMs: number; aiAnswer: string }) => ({
             model: r.model,
             provider: r.provider,
             timeMs: r.aiTimeMs,
@@ -110,7 +110,7 @@ function PlayPageContent() {
         setCountdown(0);
       }
     }, 1000);
-  }, [topic]);
+  }, [topic, allowAllModels]);
 
   useEffect(() => {
     const savedHandle = typeof window !== "undefined" ? localStorage.getItem("beatbot_handle") : null;
@@ -448,11 +448,11 @@ function PlayPageContent() {
                   
                   try {
                     // Suppress console warnings and errors temporarily
-                    console.warn = (...args: any[]) => {
+                    console.warn = (...args: unknown[]) => {
                       if (args[0]?.toString?.().includes('oklab')) return;
                       originalWarn(...args);
                     };
-                    console.error = (...args: any[]) => {
+                    console.error = (...args: unknown[]) => {
                       if (args[0]?.toString?.().includes('oklab')) return;
                       originalError(...args);
                     };

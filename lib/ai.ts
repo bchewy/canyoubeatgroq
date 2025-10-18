@@ -193,7 +193,7 @@ async function solveWithResponsesAPI(problem: Problem, config: ModelConfig): Pro
   const t0 = Date.now();
   try {
     // gpt-4o doesn't support reasoning parameter
-    const requestBody: any = {
+    const requestBody: { model: string; input: string; reasoning?: { effort: string } } = {
       model: config.modelId,
       input: prompt,
     };
