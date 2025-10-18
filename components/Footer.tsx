@@ -75,7 +75,7 @@ export default function Footer() {
           {/* Right: Built by credit */}
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="text-[10px] sm:text-xs text-white/70">
-              Built by{" "}
+              {" "}
               <a 
                 href="https://x.com/bchewyme" 
                 target="_blank" 

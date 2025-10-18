@@ -56,7 +56,7 @@ export default function RoadmapToast() {
         <div className="text-white/90 text-sm space-y-2">
           <div className="font-semibold text-orange-400">🚀 Coming Soon</div>
           <p className="leading-relaxed">
-            More models and complex tests on the way! The basis of this is extremely fun and unique.
+            More models and complex tests on the way! Stay tuned. The project is also open-source on GitHub!
           </p>
         </div>
       </div>
