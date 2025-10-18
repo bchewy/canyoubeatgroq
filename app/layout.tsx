@@ -4,6 +4,7 @@ import "./globals.css";
 import GridDistortion from "@/components/GridDistortion";
 import Footer from "@/components/Footer";
 import RoadmapToast from "@/components/RoadmapToast";
+import ClickSpark from "@/components/ClickSpark";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,9 +47,17 @@ export default function RootLayout({
             relaxation={0.85}
           />
         </div>
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          {children}
-        </div>
+        <ClickSpark
+          sparkColor='#fff'
+          sparkSize={10}
+          sparkRadius={15}
+          sparkCount={8}
+          duration={400}
+        >
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            {children}
+          </div>
+        </ClickSpark>
         <Footer />
         <RoadmapToast />
       </body>
