@@ -213,6 +213,20 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
         data[i * 4 + 1] *= relaxation;
       }
 
+      // Add automatic flowing motion
+      const time = Date.now() * 0.0003;
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          const index = 4 * (i + size * j);
+          // Create flowing wave pattern
+          const waveX = Math.sin(time + i * 0.3 + j * 0.2) * 0.5;
+          const waveY = Math.cos(time * 0.8 + i * 0.2 + j * 0.3) * 0.5;
+          data[index] += waveX * strength * 8;
+          data[index + 1] += waveY * strength * 8;
+        }
+      }
+
+      // Add mouse interaction on top
       const gridMouseX = size * mouseState.x;
       const gridMouseY = size * mouseState.y;
       const maxDist = size * mouse;

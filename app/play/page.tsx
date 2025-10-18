@@ -160,7 +160,7 @@ function PlayPageContent() {
   }, [deadlineMs, now]);
 
   return (
-    <div className="min-h-screen p-6 flex flex-col items-center gap-6">
+    <div className="min-h-screen p-6 pb-32 flex flex-col items-center gap-6">
       <div className="w-full max-w-2xl space-y-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
@@ -228,12 +228,28 @@ function PlayPageContent() {
               )}
 
               {result && (
-                <div className="mt-4 p-3 rounded-md border border-white/20 bg-black/30 backdrop-blur-sm text-white" aria-live="polite">
+                <div className={`mt-4 p-3 rounded-md border backdrop-blur-sm text-white ${
+                  result.outcome === "win" 
+                    ? "bg-green-950/40 border-green-500/40" 
+                    : result.outcome === "loss" 
+                    ? "bg-red-950/30 border-red-500/30"
+                    : result.outcome === "wrong"
+                    ? "bg-red-950/30 border-red-500/30"
+                    : "bg-black/30 border-white/20"
+                }`} aria-live="polite">
                   {!result.outcome && <div className="text-sm">Error. Try again.</div>}
                   {(result.outcome === "win" || result.outcome === "loss" || result.outcome === "wrong" || result.outcome === "timeout") && (
                     <div className="space-y-2">
-                      <div className="text-lg font-semibold text-white">
-                        {result.outcome === "win" && "Humanity +1"}
+                      <div className={`font-semibold ${
+                        result.outcome === "win" 
+                          ? "text-2xl text-green-400" 
+                          : result.outcome === "loss"
+                          ? "text-lg text-red-400"
+                          : result.outcome === "wrong"
+                          ? "text-lg text-red-400"
+                          : "text-lg text-amber-400"
+                      }`}>
+                        {result.outcome === "win" && "🏆 Humanity +1"}
                         {result.outcome === "loss" && "Outpaced by silicon"}
                         {result.outcome === "wrong" && "Wrong answer"}
                         {result.outcome === "timeout" && "Timeout"}
@@ -406,7 +422,7 @@ function PlayPageContent() {
               {/* Footer */}
               <div className="px-6 py-3 text-center" style={{ backgroundColor: '#3D2B23' }}>
                 <div className="text-xs uppercase tracking-wider" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
-                  beatgroq.vercel.app
+                  canyoubeatgroq.com
                 </div>
               </div>
             </div>
