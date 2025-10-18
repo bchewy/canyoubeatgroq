@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Beat GPT-4 Speedrun (MVP)
 
-## Getting Started
+Race GPT-4 to answer bite-size prompts. Win if your correct answer lands before the AI’s.
 
-First, run the development server:
+## Stack
+- Next.js (App Router, TS)
+- Tailwind CSS
+- Vercel AI SDK (`ai`, `@ai-sdk/openai`)
+- Vercel KV (AI cache; optional local fallback)
+- Supabase (leaderboard)
 
+## Quick start
 ```bash
+# 1) Install
+npm i
+
+# 2) Configure env
+cp ENV.sample .env.local
+# fill in OPENAI_API_KEY and START_TOKEN_SECRET
+
+# (Optional) Vercel KV for persistence
+# KV_REST_API_URL=...
+# KV_REST_API_TOKEN=...
+
+# 3) (Optional) Supabase local
+npm i -D supabase @supabase/supabase-js
+npx supabase init
+# edit supabase/migrations/* if needed
+npx supabase db start
+npx supabase db push
+
+# 4) Dev
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# 5) Build
+npm run build && npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Routes
+- POST /api/start → { problem, startToken, seed, expiresAt }
+- POST /api/ai-solve → { aiAnswer, aiTimeMs, cached }
+- POST /api/submit → { outcome, userTimeMs, aiTimeMs, winMarginMs, savedToLb }
+- GET  /api/leaderboard?seed=YYYY-MM-DD&limit=50 → { entries }
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Env
+- OPENAI_API_KEY (required)
+- START_TOKEN_SECRET (required)
+- KV_REST_API_URL, KV_REST_API_TOKEN (optional)
+- SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE (optional, for leaderboard)
+- GROQ_API_KEY (optional, if using Groq OpenAI-compatible endpoint)
+- NEXT_PUBLIC_APP_URL (optional)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes
+- Leaderboard stored in Supabase when configured; otherwise uses in-memory KV fallback (ephemeral).
+- startToken embeds server timestamp; server computes user time and enforces 35s expiry.
