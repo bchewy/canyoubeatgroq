@@ -214,15 +214,17 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       }
 
       // Add automatic flowing motion
-      const time = Date.now() * 0.0003;
+      const time = Date.now() * 0.0008;
       for (let i = 0; i < size; i++) {
         for (let j = 0; j < size; j++) {
           const index = 4 * (i + size * j);
-          // Create flowing wave pattern
-          const waveX = Math.sin(time + i * 0.3 + j * 0.2) * 0.5;
-          const waveY = Math.cos(time * 0.8 + i * 0.2 + j * 0.3) * 0.5;
-          data[index] += waveX * strength * 8;
-          data[index + 1] += waveY * strength * 8;
+          // Create subtle flowing wave pattern
+          const waveX = Math.sin(time + i * 0.3 + j * 0.2) * 0.3;
+          const waveY = Math.cos(time * 1.1 + i * 0.2 + j * 0.3) * 0.3;
+          const waveX2 = Math.sin(time * 0.6 + i * 0.4) * 0.2;
+          const waveY2 = Math.cos(time * 0.8 + j * 0.4) * 0.2;
+          data[index] += (waveX + waveX2) * strength * 12;
+          data[index + 1] += (waveY + waveY2) * strength * 12;
         }
       }
 
