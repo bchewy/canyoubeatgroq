@@ -43,4 +43,15 @@ export type AiModelResult = {
   timeMs: number;
 };
 
+export type OneWordQuestion = {
+  question: string;
+  expectedAnswer: string;
+};
+
+export type OneWordJudgment = {
+  reasoning: string;
+  userCorrect: boolean;
+  aiResults: { model: string; answer: string; correct: boolean }[];
+  winner: 'user' | 'ai' | 'tie';
+};
 

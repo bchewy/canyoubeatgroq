@@ -90,6 +90,11 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
           allow all other models
         </label>
       </div>
+      <div className="text-center">
+        <Link href="/oneword" className="text-sm text-white/80 hover:text-white underline drop-shadow-[0_1px_4px_rgba(0,0,0,.45)]">
+          Try One-Word Challenge →
+        </Link>
+      </div>
       <div className="w-full max-w-xl">
         <h2 className="font-semibold mb-2 text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)]">Today&apos;s Top 10</h2>
         <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm" role="list">
