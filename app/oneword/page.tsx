@@ -182,8 +182,8 @@ export default function OneWordPage() {
   }, []);
 
   return (
-    <div className="min-h-screen p-6 pb-32 flex flex-col items-center gap-6">
-      <div className="w-full max-w-2xl space-y-4">
+    <div className="min-h-screen p-4 sm:p-6 pb-32 flex flex-col items-center gap-4 sm:gap-6">
+      <div className="w-full max-w-2xl space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <Link href="/" className="text-white/65 hover:text-white transition">
@@ -201,7 +201,7 @@ export default function OneWordPage() {
 
         {/* Topic Input */}
         {gameState === "topic-input" && (
-          <div className="border border-white/20 rounded-lg p-6 bg-black/30 backdrop-blur-sm space-y-4">
+          <div className="border border-white/20 rounded-lg p-4 sm:p-6 bg-black/30 backdrop-blur-sm space-y-3 sm:space-y-4">
             <div className="text-white">
               <h2 className="text-lg font-medium mb-2">Choose Your Topic</h2>
               <p className="text-sm text-white/65 mb-4">
@@ -237,25 +237,25 @@ export default function OneWordPage() {
 
         {/* Loading */}
         {gameState === "loading" && (
-          <div className="border border-white/20 rounded-lg p-8 bg-black/30 backdrop-blur-sm">
+          <div className="border border-white/20 rounded-lg p-6 sm:p-8 bg-black/30 backdrop-blur-sm">
             <div className="text-center text-white">
-              <div className="text-lg mb-2">Generating question about &quot;{topic}&quot;...</div>
-              <div className="text-sm text-white/65">Using groq/compound-mini</div>
+              <div className="text-base sm:text-lg mb-2">Generating question about &quot;{topic}&quot;...</div>
+              <div className="text-xs sm:text-sm text-white/65">Using groq/compound-mini</div>
             </div>
           </div>
         )}
 
         {/* Countdown */}
         {gameState === "countdown" && question && (
-          <div className="border border-white/20 rounded-lg p-6 bg-black/30 backdrop-blur-sm space-y-4">
-            <div className="text-lg font-medium text-white mb-2">{question.question}</div>
-            <div className="text-center text-6xl font-bold py-8 text-white">{countdown}</div>
+          <div className="border border-white/20 rounded-lg p-4 sm:p-6 bg-black/30 backdrop-blur-sm space-y-3 sm:space-y-4">
+            <div className="text-base sm:text-lg font-medium text-white mb-2">{question.question}</div>
+            <div className="text-center text-4xl sm:text-6xl font-bold py-6 sm:py-8 text-white">{countdown}</div>
           </div>
         )}
 
         {/* Answering */}
         {gameState === "answering" && question && (
-          <div className="border border-white/20 rounded-lg p-6 bg-black/30 backdrop-blur-sm space-y-4">
+          <div className="border border-white/20 rounded-lg p-4 sm:p-6 bg-black/30 backdrop-blur-sm space-y-3 sm:space-y-4">
             <div className="text-lg font-medium text-white mb-4">{question.question}</div>
             <form
               onSubmit={(e) => {
@@ -304,25 +304,25 @@ export default function OneWordPage() {
 
         {/* Judging */}
         {gameState === "judging" && question && (
-          <div className="border border-white/20 rounded-lg p-8 bg-black/30 backdrop-blur-sm">
-            <div className="text-center space-y-4">
-              <div className="text-lg font-medium text-white">Judging answers...</div>
+          <div className="border border-white/20 rounded-lg p-6 sm:p-8 bg-black/30 backdrop-blur-sm">
+            <div className="text-center space-y-3 sm:space-y-4">
+              <div className="text-base sm:text-lg font-medium text-white">Judging answers...</div>
               <div className="flex items-center justify-center gap-2 text-white/65">
                 <div className="w-2 h-2 rounded-full bg-white/80 animate-bounce" style={{ animationDelay: "0ms" }}></div>
                 <div className="w-2 h-2 rounded-full bg-white/80 animate-bounce" style={{ animationDelay: "150ms" }}></div>
                 <div className="w-2 h-2 rounded-full bg-white/80 animate-bounce" style={{ animationDelay: "300ms" }}></div>
               </div>
-              <div className="text-sm text-white/50">Using groq/compound to reason...</div>
+              <div className="text-xs sm:text-sm text-white/50">Using groq/compound to reason...</div>
             </div>
           </div>
         )}
 
         {/* Results */}
         {gameState === "results" && question && judgment && (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Winner Banner */}
             <div
-              className={`border rounded-lg p-6 backdrop-blur-sm ${
+              className={`border rounded-lg p-4 sm:p-6 backdrop-blur-sm ${
                 judgment.winner === "user"
                   ? "bg-green-950/40 border-green-500/40"
                   : judgment.winner === "ai"
@@ -331,7 +331,7 @@ export default function OneWordPage() {
               }`}
             >
               <div
-                className={`text-2xl font-bold mb-2 ${
+                className={`text-xl sm:text-2xl font-bold mb-2 ${
                   judgment.winner === "user"
                     ? "text-green-400"
                     : judgment.winner === "ai"
@@ -343,46 +343,46 @@ export default function OneWordPage() {
                 {judgment.winner === "ai" && "🤖 AI Wins"}
                 {judgment.winner === "tie" && "🤝 It&apos;s a Tie!"}
               </div>
-              <div className="text-sm text-white/80">
+              <div className="text-xs sm:text-sm text-white/80">
                 Question: <span className="font-medium">{question.question}</span>
               </div>
             </div>
 
             {/* Judge Reasoning */}
-            <div className="border border-white/20 rounded-lg p-4 bg-black/30 backdrop-blur-sm">
-              <div className="text-sm font-semibold text-white/80 mb-2">
+            <div className="border border-white/20 rounded-lg p-3 sm:p-4 bg-black/30 backdrop-blur-sm">
+              <div className="text-xs sm:text-sm font-semibold text-white/80 mb-2">
                 🧠 Judge&apos;s Reasoning (groq/compound):
               </div>
-              <div className="text-sm text-white/90 whitespace-pre-wrap font-mono bg-black/20 p-3 rounded">
+              <div className="text-xs sm:text-sm text-white/90 whitespace-pre-wrap font-mono bg-black/20 p-2 sm:p-3 rounded">
                 {judgment.reasoning}
               </div>
             </div>
 
             {/* User Answer */}
-            <div className="border border-white/20 rounded-lg p-4 bg-black/30 backdrop-blur-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-white/65">Your Answer:</div>
-                  <div className="text-lg font-medium text-white">{userAnswer}</div>
+            <div className="border border-white/20 rounded-lg p-3 sm:p-4 bg-black/30 backdrop-blur-sm">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs sm:text-sm text-white/65">Your Answer:</div>
+                  <div className="text-base sm:text-lg font-medium text-white truncate">{userAnswer}</div>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex-shrink-0">
                   <div
-                    className={`text-xl font-bold ${
+                    className={`text-base sm:text-xl font-bold ${
                       judgment.userCorrect ? "text-green-400" : "text-red-400"
                     }`}
                   >
                     {judgment.userCorrect ? "✓ Correct" : "✗ Incorrect"}
                   </div>
-                  <div className="text-sm text-white/65">{userTimeMs} ms</div>
+                  <div className="text-xs sm:text-sm text-white/65">{userTimeMs} ms</div>
                 </div>
               </div>
             </div>
 
             {/* AI Results */}
-            <div className="border border-white/20 rounded-lg p-4 bg-black/30 backdrop-blur-sm">
-              <div className="text-sm font-semibold text-white/80 mb-3">AI Models:</div>
+            <div className="border border-white/20 rounded-lg p-3 sm:p-4 bg-black/30 backdrop-blur-sm">
+              <div className="text-xs sm:text-sm font-semibold text-white/80 mb-3">AI Models:</div>
               {judgment.aiResults.length === 0 ? (
-                <div className="text-sm text-amber-400/80 py-4 text-center">
+                <div className="text-xs sm:text-sm text-amber-400/80 py-4 text-center">
                   No AI model results available. This may happen if the API is slow or there was an error.
                   <div className="text-xs text-white/50 mt-2">Check the console for details.</div>
                 </div>
@@ -393,11 +393,11 @@ export default function OneWordPage() {
                     return (
                       <div
                         key={ai.model}
-                        className="flex items-center justify-between py-2 border-b border-white/10 last:border-0"
+                        className="flex items-center justify-between py-2 border-b border-white/10 last:border-0 gap-2"
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                           <span
-                            className={`text-lg ${
+                            className={`text-base sm:text-lg flex-shrink-0 ${
                               ai.correct ? "text-green-400" : "text-red-400"
                             }`}
                           >
@@ -406,14 +406,14 @@ export default function OneWordPage() {
                           <ModelIcon
                             provider={aiResult?.provider}
                             modelName={ai.model}
-                            className="w-4 h-4"
+                            className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0"
                           />
-                          <span className="text-white font-medium">{ai.model}</span>
+                          <span className="text-xs sm:text-sm text-white font-medium truncate">{ai.model}</span>
                         </div>
-                        <div className="text-right">
-                          <div className="text-white font-mono">{ai.answer || "(no answer)"}</div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-xs sm:text-sm text-white font-mono">{ai.answer || "(no answer)"}</div>
                           {aiResult && (
-                            <div className="text-xs text-white/50">{aiResult.timeMs} ms</div>
+                            <div className="text-[10px] sm:text-xs text-white/50">{aiResult.timeMs} ms</div>
                           )}
                         </div>
                       </div>
@@ -424,7 +424,7 @@ export default function OneWordPage() {
             </div>
 
             {/* Expected Answer */}
-            <div className="border border-white/20 rounded-lg p-4 bg-black/30 backdrop-blur-sm">
+            <div className="border border-white/20 rounded-lg p-3 sm:p-4 bg-black/30 backdrop-blur-sm">
               <div className="text-sm text-white/65">Expected Answer:</div>
               <div className="text-lg font-medium text-white">{question.expectedAnswer}</div>
             </div>

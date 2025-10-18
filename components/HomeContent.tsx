@@ -43,9 +43,9 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
     : entries.filter(e => GROQ_MODELS.includes(e.aiModel));
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8 pb-32 gap-8">
-      <div className="text-center space-y-6">
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.45)] flex items-center gap-3 justify-center">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 pb-32 gap-6 sm:gap-8">
+      <div className="text-center space-y-4 sm:space-y-6">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.45)] flex flex-wrap items-center gap-2 sm:gap-3 justify-center">
           Can{" "}
           <span className="bg-gradient-to-r from-orange-400 via-red-500 to-orange-400 bg-clip-text text-transparent animate-pulse drop-shadow-[0_0_20px_rgba(249,115,22,0.6)]" style={{ filter: 'drop-shadow(0 0 20px rgba(249, 115, 22, 0.6))' }}>
             you
@@ -57,7 +57,7 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
           </svg>
           ?
         </h1>
-        <p className="text-lg text-white/90 drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] max-w-2xl">
+        <p className="text-sm sm:text-base md:text-lg text-white/90 drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] max-w-2xl px-4">
           Test your speed against the fastest AI models. Solve problems faster than AI to win.
         </p>
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-white/80 text-sm max-w-2xl mx-auto pt-2">
@@ -96,26 +96,33 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
         </Link>
       </div>
       <div className="w-full max-w-xl">
-        <h2 className="font-semibold mb-2 text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)]">Today&apos;s Top 10</h2>
+        <h2 className="font-semibold mb-2 text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm sm:text-base">Today&apos;s Top 10</h2>
         <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm" role="list">
           {filteredEntries.length === 0 ? (
-            <div className="p-4 text-sm text-white/80">Be first. Set the pace.</div>
+            <div className="p-3 sm:p-4 text-xs sm:text-sm text-white/80">Be first. Set the pace.</div>
           ) : (
             filteredEntries.map((e, i) => (
-              <div key={i} className="p-3 flex items-center justify-between text-sm border-t first:border-0 border-white/10" role="listitem">
-                <div className="flex items-center gap-3">
-                  <span className="w-6 text-right text-white font-semibold">{i + 1}</span>
+              <div key={i} className="p-2 sm:p-3 flex items-center justify-between gap-2 text-xs sm:text-sm border-t first:border-0 border-white/10" role="listitem">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  <span className="w-4 sm:w-6 text-right text-white font-semibold flex-shrink-0">{i + 1}</span>
                   <div 
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0"
                     style={{ backgroundColor: getAvatarColor(e.userHandle) }}
                   >
                     {getInitials(e.userHandle)}
                   </div>
-                  <span className="font-mono text-white">{e.userHandle}</span>
+                  <span className="font-mono text-white text-xs sm:text-sm truncate">{e.userHandle}</span>
                 </div>
-                <div className="font-mono text-white text-right">
-                  <div className="text-xs text-white/50 flex items-center justify-end gap-1">beat <ModelIcon modelName={e.aiModel} className="w-3 h-3" /> {e.aiModel}</div>
-                  <div>+{e.winMarginMs} ms <span className="text-white/60">({e.userTimeMs} {"<"} {e.aiTimeMs})</span></div>
+                <div className="font-mono text-white text-right flex-shrink-0">
+                  <div className="text-[10px] sm:text-xs text-white/50 flex items-center justify-end gap-1">
+                    <span className="hidden sm:inline">beat</span>
+                    <ModelIcon modelName={e.aiModel} className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    <span className="truncate max-w-[60px] sm:max-w-none">{e.aiModel}</span>
+                  </div>
+                  <div className="text-[10px] sm:text-sm">
+                    +{e.winMarginMs} ms
+                    <span className="hidden sm:inline text-white/60"> ({e.userTimeMs} {"<"} {e.aiTimeMs})</span>
+                  </div>
                 </div>
               </div>
             ))

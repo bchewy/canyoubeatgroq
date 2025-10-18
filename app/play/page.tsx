@@ -160,8 +160,8 @@ function PlayPageContent() {
   }, [deadlineMs, now]);
 
   return (
-    <div className="min-h-screen p-6 pb-32 flex flex-col items-center gap-6">
-      <div className="w-full max-w-2xl space-y-4">
+    <div className="min-h-screen p-4 sm:p-6 pb-32 flex flex-col items-center gap-4 sm:gap-6">
+      <div className="w-full max-w-2xl space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <Link href="/" className="text-white/65 hover:text-white transition">
@@ -176,11 +176,11 @@ function PlayPageContent() {
           <div className="h-full bg-[var(--accent)] transition-[width]" style={{ width: `${(Math.max(0, 30_000 - timeLeft) / 30_000) * 100}%` }} />
         </div>
 
-        <div className="border border-white/20 rounded-lg p-4 bg-black/30 backdrop-blur-sm">
+        <div className="border border-white/20 rounded-lg p-3 sm:p-4 bg-black/30 backdrop-blur-sm">
           {!problem ? (
             <div className="text-white">Loading…</div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <div className="text-sm text-white/65">Round seed: {seed}</div>
               <div className="text-lg font-medium text-white">{problem.prompt}</div>
 
@@ -305,7 +305,7 @@ function PlayPageContent() {
       {/* Handle gate modal */}
       {needHandle && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" aria-modal="true">
-          <div className="w-full max-w-sm bg-white rounded-lg p-4 space-y-3 text-black" role="dialog" aria-labelledby="handle-title">
+          <div className="w-full max-w-sm bg-white rounded-lg p-4 sm:p-5 space-y-3 text-black" role="dialog" aria-labelledby="handle-title">
             <div id="handle-title" className="text-lg font-semibold text-black">Choose a handle</div>
             <form
               onSubmit={(e) => {
@@ -360,56 +360,56 @@ function PlayPageContent() {
         <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center p-4 z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }} onClick={() => setShowShareBanner(false)}>
           <div className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
             {/* Results-style Banner Card */}
-            <div ref={bannerRef} className="rounded-lg shadow-2xl overflow-hidden" style={{ backgroundColor: '#2D1F1A', width: '600px' }}>
+            <div ref={bannerRef} className="rounded-lg shadow-2xl overflow-hidden w-full max-w-[600px] mx-auto" style={{ backgroundColor: '#2D1F1A' }}>
               {/* Header */}
-              <div className="px-6 py-4" style={{ backgroundColor: '#3D2B23' }}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="text-3xl">{result.outcome === "win" ? "🏆" : "⚡"}</div>
+              <div className="px-4 sm:px-6 py-3 sm:py-4" style={{ backgroundColor: '#3D2B23' }}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="text-2xl sm:text-3xl">{result.outcome === "win" ? "🏆" : "⚡"}</div>
                     <div>
-                      <div className="text-xl font-bold" style={{ color: '#FF5C39' }}>
+                      <div className="text-lg sm:text-xl font-bold" style={{ color: '#FF5C39' }}>
                         {result.outcome === "win" ? "Victory!" : "Nice Try!"}
                       </div>
-                      <div className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                      <div className="text-xs sm:text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                         @{handle} vs AI
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>Your Time</div>
-                    <div className="text-2xl font-bold" style={{ color: '#FF5C39' }}>{result.userTimeMs}ms</div>
+                    <div className="text-[10px] sm:text-xs" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>Your Time</div>
+                    <div className="text-xl sm:text-2xl font-bold" style={{ color: '#FF5C39' }}>{result.userTimeMs}ms</div>
                   </div>
                 </div>
               </div>
 
               {/* AI Models List */}
-              <div className="px-6 py-4">
-                <div className="text-sm font-semibold mb-3" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+              <div className="px-4 sm:px-6 py-3 sm:py-4">
+                <div className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                   AI Models:
                 </div>
-                <div className="space-y-1 font-mono text-sm">
+                <div className="space-y-1 font-mono text-xs sm:text-sm">
                   {result.modelResults && result.modelResults.map((mr) => (
-                    <div key={mr.model} className="flex items-center justify-between py-1">
-                      <div className="flex items-center gap-2">
-                        <span style={{ color: mr.beaten ? '#10B981' : '#EF4444', fontSize: '14px' }}>
+                    <div key={mr.model} className="flex items-center justify-between py-1 gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
+                        <span style={{ color: mr.beaten ? '#10B981' : '#EF4444', fontSize: '12px' }} className="sm:text-sm flex-shrink-0">
                           {mr.beaten ? "✓" : "✗"}
                         </span>
-                        <ModelIcon provider={mr.provider} modelName={mr.model} className="w-4 h-4" />
-                        <span style={{ color: mr.beaten ? '#10B981' : '#EF4444', fontSize: '13px' }}>
+                        <ModelIcon provider={mr.provider} modelName={mr.model} className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span style={{ color: mr.beaten ? '#10B981' : '#EF4444', fontSize: '11px' }} className="sm:text-[13px] truncate">
                           {mr.model}
                         </span>
                         {mr.provider && (
-                          <span style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '11px' }}>
+                          <span style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '10px' }} className="sm:text-[11px] hidden sm:inline">
                             ({mr.provider})
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span style={{ color: '#FFFFFF', fontSize: '13px' }}>
+                      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                        <span style={{ color: '#FFFFFF', fontSize: '11px' }} className="sm:text-[13px]">
                           {mr.timeMs} ms
                         </span>
                         {mr.winMarginMs != null && mr.beaten && (
-                          <span style={{ color: '#10B981', fontSize: '13px' }}>
+                          <span style={{ color: '#10B981', fontSize: '11px' }} className="sm:text-[13px]">
                             (+{mr.winMarginMs})
                           </span>
                         )}
@@ -420,7 +420,7 @@ function PlayPageContent() {
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-3 text-center" style={{ backgroundColor: '#3D2B23' }}>
+              <div className="px-4 sm:px-6 py-2 sm:py-3 text-center" style={{ backgroundColor: '#3D2B23' }}>
                 <div className="text-xs uppercase tracking-wider" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
                   canyoubeatgroq.com
                 </div>
