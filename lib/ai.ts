@@ -24,6 +24,7 @@ type ModelConfig = {
   modelId: string;
   enabled: boolean;
   useResponsesAPI?: boolean;
+  isReasoningModel?: boolean;
 };
 
 function getModelConfigs(allowAllModels = false): ModelConfig[] {
@@ -62,6 +63,7 @@ function getModelConfigs(allowAllModels = false): ModelConfig[] {
       client: groqClient,
       modelId: "openai/gpt-oss-120b",
       enabled: !!process.env.GROQ_API_KEY,
+      isReasoningModel: true,
     },
     {
       name: "gpt-oss-20b",
@@ -69,6 +71,7 @@ function getModelConfigs(allowAllModels = false): ModelConfig[] {
       client: groqClient,
       modelId: "openai/gpt-oss-20b",
       enabled: !!process.env.GROQ_API_KEY,
+      isReasoningModel: true,
     },
     {
       name: "gpt-4o",
@@ -147,39 +150,92 @@ async function solveWithCompoundModel(problem: Problem, config: ModelConfig): Pr
   
   const t0 = Date.now();
   try {
+    console.log(`\n[DEBUG ${config.name}] Using direct API call...`);
+    console.log(`[DEBUG ${config.name}] Model ID: ${config.modelId}`);
+    console.log(`[DEBUG ${config.name}] Is reasoning model: ${config.isReasoningModel ? "YES" : "NO"}`);
+    
+    // Build request body conditionally
+    const requestBody: {
+      model: string;
+      messages: { role: string; content: string }[];
+      temperature?: number;
+      max_completion_tokens: number;
+      compound_custom?: { tools: { enabled_tools: string[] } };
+    } = {
+      model: config.modelId,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: prompt }
+      ],
+      // Reasoning models need more tokens for their reasoning field
+      max_completion_tokens: config.isReasoningModel ? 128 : 16,
+    };
+    
+    console.log(`[DEBUG ${config.name}] Max completion tokens: ${requestBody.max_completion_tokens}`);
+    
+    // Only set temperature for non-reasoning models
+    if (!config.isReasoningModel) {
+      requestBody.temperature = 0;
+      console.log(`[DEBUG ${config.name}] Temperature set to 0`);
+    } else {
+      console.log(`[DEBUG ${config.name}] Temperature NOT set (reasoning model)`);
+    }
+    
+    // Only add compound_custom for actual compound models
+    if (config.modelId.includes("compound")) {
+      requestBody.compound_custom = {
+        tools: {
+          enabled_tools: ["web_search", "code_interpreter", "visit_website"]
+        }
+      };
+      console.log(`[DEBUG ${config.name}] Added compound_custom tools`);
+    }
+    
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: config.modelId,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0,
-        max_completion_tokens: 16,
-        compound_custom: {
-          tools: {
-            enabled_tools: ["web_search", "code_interpreter", "visit_website"]
-          }
-        }
-      })
+      body: JSON.stringify(requestBody)
     });
     
     if (!response.ok) {
-      throw new Error(`API error: ${response.status} ${await response.text()}`);
+      const errorText = await response.text();
+      console.error(`[ERROR ${config.name}] API returned ${response.status}: ${errorText}`);
+      throw new Error(`API error: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
+    console.log(`[DEBUG ${config.name}] API response received`);
+    console.log(`[DEBUG ${config.name}] Full response data:`, JSON.stringify(data, null, 2));
+    
     const text = data.choices?.[0]?.message?.content || "";
+    console.log(`[DEBUG ${config.name}] Extracted text: "${text}"`);
+    console.log(`[DEBUG ${config.name}] Text length: ${text?.length || 0}`);
+    console.log(`[DEBUG ${config.name}] Choices array:`, data.choices);
+    console.log(`[DEBUG ${config.name}] First choice:`, data.choices?.[0]);
+    console.log(`[DEBUG ${config.name}] Message content:`, data.choices?.[0]?.message?.content);
+    
     const timeMs = Date.now() - t0;
     const answer = normalizeAnswer(text);
+    
+    // Debug logging
+    console.log("\n" + "=".repeat(80));
+    console.log(`[${config.provider}] ${config.name}`);
+    console.log("Problem:", prompt);
+    console.log("Raw response:", text);
+    console.log("Normalized answer:", answer);
+    console.log("=".repeat(80) + "\n");
+    
     return { model: config.name, provider: config.provider, answer, timeMs };
   } catch (err) {
-    console.error(`[${config.name}] Error:`, err);
+    console.error(`\n[ERROR ${config.name}] CAUGHT EXCEPTION!`);
+    console.error(`[ERROR ${config.name}] Error type:`, (err as Error)?.constructor?.name);
+    console.error(`[ERROR ${config.name}] Error message:`, (err as Error)?.message);
+    console.error(`[ERROR ${config.name}] Full error:`, err);
+    console.error(`[ERROR ${config.name}] Returning fallback answer\n`);
+    
     const fallbackAnswer = normalizeAnswer(problem.answer);
     const fallbackMs = Number(process.env.AI_FAKE_MS || 1500);
     const timeMs = Math.max(fallbackMs, Date.now() - t0);
@@ -219,6 +275,15 @@ async function solveWithResponsesAPI(problem: Problem, config: ModelConfig): Pro
     const text = data.output?.text || "";
     const timeMs = Date.now() - t0;
     const answer = normalizeAnswer(text);
+    
+    // Debug logging
+    console.log("\n" + "=".repeat(80));
+    console.log(`[${config.provider}] ${config.name}`);
+    console.log("Problem:", prompt);
+    console.log("Raw response:", text);
+    console.log("Normalized answer:", answer);
+    console.log("=".repeat(80) + "\n");
+    
     return { model: config.name, provider: config.provider, answer, timeMs };
   } catch (err) {
     console.error(`[${config.name}] Error:`, err);
@@ -235,6 +300,11 @@ async function solveWithModel(problem: Problem, config: ModelConfig): Promise<Ai
     return solveWithCompoundModel(problem, config);
   }
   
+  // Use direct API for gpt-oss models (they don't work properly with AI SDK)
+  if (config.modelId === "openai/gpt-oss-120b" || config.modelId === "openai/gpt-oss-20b") {
+    return solveWithCompoundModel(problem, config);
+  }
+  
   // Use Responses API for OpenAI models that require it
   if (config.useResponsesAPI) {
     return solveWithResponsesAPI(problem, config);
@@ -245,20 +315,59 @@ async function solveWithModel(problem: Problem, config: ModelConfig): Promise<Ai
 
   const t0 = Date.now();
   try {
+    console.log(`\n[DEBUG ${config.name}] Starting request...`);
+    console.log(`[DEBUG ${config.name}] Model ID: ${config.modelId}`);
+    console.log(`[DEBUG ${config.name}] Is reasoning model: ${config.isReasoningModel ? "YES" : "NO"}`);
+    
     const model = config.client(config.modelId);
-    const { text } = await generateText({
+    const generateOptions: {
+      model: typeof model;
+      system: string;
+      prompt: string;
+      temperature?: number;
+      maxOutputTokens: number;
+    } = {
       model,
       system,
       prompt,
-      temperature: 0,
       maxOutputTokens: 16,
-    });
+    };
+    
+    // Only set temperature for non-reasoning models
+    if (!config.isReasoningModel) {
+      generateOptions.temperature = 0;
+      console.log(`[DEBUG ${config.name}] Temperature set to 0`);
+    } else {
+      console.log(`[DEBUG ${config.name}] Temperature NOT set (reasoning model)`);
+    }
+    
+    console.log(`[DEBUG ${config.name}] Calling generateText...`);
+    const { text } = await generateText(generateOptions);
+    console.log(`[DEBUG ${config.name}] generateText completed, text length: ${text?.length || 0}`);
+    
     const timeMs = Date.now() - t0;
     const answer = normalizeAnswer(text || "");
+    
+    // Debug logging
+    console.log("\n" + "=".repeat(80));
+    console.log(`[${config.provider}] ${config.name}`);
+    console.log("Problem:", prompt);
+    console.log("Raw response:", text);
+    console.log("Normalized answer:", answer);
+    console.log("=".repeat(80) + "\n");
+    
     return { model: config.name, provider: config.provider, answer, timeMs };
   } catch (err) {
     // Log the actual error to help debug
-    console.error(`[${config.name}] Error:`, err);
+    console.error(`\n[ERROR ${config.name}] CAUGHT EXCEPTION!`);
+    console.error(`[ERROR ${config.name}] Error type:`, (err as Error)?.constructor?.name);
+    console.error(`[ERROR ${config.name}] Error message:`, (err as Error)?.message);
+    console.error(`[ERROR ${config.name}] Full error:`, err);
+    if ((err as Error)?.stack) {
+      console.error(`[ERROR ${config.name}] Stack trace:`, (err as Error).stack);
+    }
+    console.error(`[ERROR ${config.name}] Returning fallback answer\n`);
+    
     const fallbackAnswer = normalizeAnswer(problem.answer);
     const fallbackMs = Number(process.env.AI_FAKE_MS || 1500);
     const timeMs = Math.max(fallbackMs, Date.now() - t0);
