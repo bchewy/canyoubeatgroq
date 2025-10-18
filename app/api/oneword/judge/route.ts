@@ -16,7 +16,19 @@ export async function POST(req: Request) {
       expectedAnswer: string;
     };
 
+    console.log(`[judge] Received request with ${aiAnswers?.length || 0} AI answers`);
+    if (aiAnswers) {
+      console.log(`[judge] AI models: ${aiAnswers.map(a => a.model).join(', ')}`);
+    }
+
     if (!question || !userAnswer || !aiAnswers || !expectedAnswer) {
+      console.error("[judge] Missing params:", { 
+        hasQuestion: !!question, 
+        hasUserAnswer: !!userAnswer, 
+        hasAiAnswers: !!aiAnswers,
+        aiAnswersCount: aiAnswers?.length,
+        hasExpectedAnswer: !!expectedAnswer 
+      });
       return NextResponse.json({ error: "missing_params" }, { status: 400 });
     }
 

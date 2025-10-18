@@ -34,6 +34,7 @@ export default function OneWordPage() {
   const [userAnswer, setUserAnswer] = useState("");
   const [userTimeMs, setUserTimeMs] = useState<number | null>(null);
   const [aiResults, setAiResults] = useState<AiResult[]>([]);
+  const [aiResultsLoading, setAiResultsLoading] = useState(false);
   const [judgment, setJudgment] = useState<JudgmentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -75,6 +76,7 @@ export default function OneWordPage() {
       }, 1000);
 
       // Pre-fetch AI answers
+      setAiResultsLoading(true);
       fetch("/api/oneword/ai-solve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,10 +86,16 @@ export default function OneWordPage() {
         .then((data) => {
           if (data.results) {
             setAiResults(data.results);
+            console.log(`[oneword] Got ${data.results.length} AI results`);
+          } else {
+            console.warn("[oneword] No AI results returned:", data);
           }
         })
         .catch((err) => {
-          console.error("Failed to get AI answers:", err);
+          console.error("[oneword] Failed to get AI answers:", err);
+        })
+        .finally(() => {
+          setAiResultsLoading(false);
         });
     } catch (err) {
       console.error("Error generating question:", err);
@@ -109,6 +117,21 @@ export default function OneWordPage() {
       return;
     }
 
+    // Wait for AI results if still loading
+    if (aiResultsLoading) {
+      console.log("[oneword] Waiting for AI results to finish loading...");
+      setError("Please wait, AI models are still answering...");
+      return;
+    }
+
+    // Warn if no AI results (but continue anyway)
+    if (aiResults.length === 0) {
+      console.warn("[oneword] No AI results available, submitting anyway");
+    } else {
+      console.log(`[oneword] Submitting with ${aiResults.length} AI results`);
+    }
+
+    setError(null);
     setGameState("judging");
 
     try {
@@ -142,7 +165,7 @@ export default function OneWordPage() {
       setError("Failed to judge answers. Please try again.");
       setGameState("answering");
     }
-  }, [question, userAnswer, startTime, aiResults]);
+  }, [question, userAnswer, startTime, aiResults, aiResultsLoading]);
 
   const resetGame = useCallback(() => {
     setGameState("topic-input");
@@ -152,6 +175,7 @@ export default function OneWordPage() {
     setUserAnswer("");
     setUserTimeMs(null);
     setAiResults([]);
+    setAiResultsLoading(false);
     setJudgment(null);
     setError(null);
     setStartTime(null);
@@ -269,6 +293,12 @@ export default function OneWordPage() {
             <div className="text-xs text-white/50 text-center">
               Only one word allowed (no spaces)
             </div>
+            {aiResultsLoading && (
+              <div className="text-xs text-amber-400/80 text-center flex items-center justify-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-400/80 animate-pulse"></div>
+                AI models are still answering...
+              </div>
+            )}
           </div>
         )}
 
@@ -351,39 +381,46 @@ export default function OneWordPage() {
             {/* AI Results */}
             <div className="border border-white/20 rounded-lg p-4 bg-black/30 backdrop-blur-sm">
               <div className="text-sm font-semibold text-white/80 mb-3">AI Models:</div>
-              <div className="space-y-2">
-                {judgment.aiResults.map((ai) => {
-                  const aiResult = aiResults.find((r) => r.model === ai.model);
-                  return (
-                    <div
-                      key={ai.model}
-                      className="flex items-center justify-between py-2 border-b border-white/10 last:border-0"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-lg ${
-                            ai.correct ? "text-green-400" : "text-red-400"
-                          }`}
-                        >
-                          {ai.correct ? "✓" : "✗"}
-                        </span>
-                        <ModelIcon
-                          provider={aiResult?.provider}
-                          modelName={ai.model}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-white font-medium">{ai.model}</span>
+              {judgment.aiResults.length === 0 ? (
+                <div className="text-sm text-amber-400/80 py-4 text-center">
+                  No AI model results available. This may happen if the API is slow or there was an error.
+                  <div className="text-xs text-white/50 mt-2">Check the console for details.</div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {judgment.aiResults.map((ai) => {
+                    const aiResult = aiResults.find((r) => r.model === ai.model);
+                    return (
+                      <div
+                        key={ai.model}
+                        className="flex items-center justify-between py-2 border-b border-white/10 last:border-0"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-lg ${
+                              ai.correct ? "text-green-400" : "text-red-400"
+                            }`}
+                          >
+                            {ai.correct ? "✓" : "✗"}
+                          </span>
+                          <ModelIcon
+                            provider={aiResult?.provider}
+                            modelName={ai.model}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-white font-medium">{ai.model}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-white font-mono">{ai.answer || "(no answer)"}</div>
+                          {aiResult && (
+                            <div className="text-xs text-white/50">{aiResult.timeMs} ms</div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-white font-mono">{ai.answer || "(no answer)"}</div>
-                        {aiResult && (
-                          <div className="text-xs text-white/50">{aiResult.timeMs} ms</div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Expected Answer */}

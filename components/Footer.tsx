@@ -48,7 +48,7 @@ export default function Footer() {
                 height={20}
                 className="opacity-70 group-hover:opacity-100 transition-opacity"
               />
-              Gemini
+              <span className="text-white/70 group-hover:text-white/90 transition-colors">Gemini</span>
             </div>
             <div className="flex items-center gap-1.5 group">
               <Image 
@@ -58,7 +58,7 @@ export default function Footer() {
                 height={20}
                 className="opacity-70 group-hover:opacity-100 transition-opacity"
               />
-              OpenAI
+              <span className="text-white/70 group-hover:text-white/90 transition-colors">OpenAI</span>
             </div>
             <div className="flex items-center gap-1.5 group">
               <Image 
@@ -68,7 +68,7 @@ export default function Footer() {
                 height={20}
                 className="opacity-70 group-hover:opacity-100 transition-opacity"
               />
-              Supabase
+              <span className="text-white/70 group-hover:text-white/90 transition-colors">Supabase</span>
             </div>
           </div>
 
