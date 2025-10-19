@@ -54,6 +54,7 @@ function PlayPageContent() {
     { value: "emoji", label: "Emoji Math" },
   ];
   const [topic, setTopic] = useState<Topic>("mixed");
+  const [readyToStart, setReadyToStart] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [startToken, setStartToken] = useState<string>("");
@@ -118,11 +119,19 @@ function PlayPageContent() {
     if (savedTopic) setTopic(savedTopic);
     if (savedHandle) {
       setHandle(savedHandle);
-      startRound();
+      setReadyToStart(true);
     } else {
       setNeedHandle(true);
     }
-  }, [startRound]);
+  }, []);
+
+  // Start the round once topic is loaded
+  useEffect(() => {
+    if (readyToStart && !problem) {
+      startRound();
+      setReadyToStart(false);
+    }
+  }, [readyToStart, problem, startRound]);
 
   const canAnswer = useMemo(() => countdown === 0 && !result, [countdown, result]);
 
@@ -316,7 +325,7 @@ function PlayPageContent() {
                 localStorage.setItem("beatbot_topic", topic);
                 setHandle(v);
                 setNeedHandle(false);
-                startRound();
+                setReadyToStart(true);
               }}
               className="space-y-3"
             >
@@ -347,7 +356,7 @@ function PlayPageContent() {
                 localStorage.setItem("beatbot_topic", topic);
                 setHandle(v);
                 setNeedHandle(false);
-                startRound();
+                setReadyToStart(true);
               }}
             >
               Continue as anon
