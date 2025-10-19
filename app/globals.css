@@ -154,7 +154,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   --secondary-foreground: #fbfbfb;
   --muted: #454545;
   --muted-foreground: #b5b5b5;
-  --accent: #454545;
+  --accent: #FF5C39;
   --accent-foreground: #fbfbfb;
   --destructive: #ef4444;
   --border: rgba(255, 255, 255, 0.1);
