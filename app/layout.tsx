@@ -9,7 +9,19 @@ import ClickSpark from "@/components/ClickSpark";
 
 export const metadata: Metadata = {
   title: "Can you beat groq?",
-  description: "Race the bot. Win on milliseconds.",
+  description: "A simple game to test your (a human)'s speed and accuracy against AI models from the fastest inference providers.",
+  openGraph: {
+    title: "Can you beat groq?",
+    description: "Test your speed against the fastest AI models. Choose your game mode.",
+    images: ['/preview.png'],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Can you beat groq?",
+    description: "Test your speed against the fastest AI models.",
+    images: ['/preview.png'],
+  },
 };
 
 export default function RootLayout({
