@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import TopicPicker from "@/components/TopicPicker";
 import ModelIcon from "@/components/ModelIcon";
 
@@ -58,6 +59,7 @@ function getProblemName(problemId: string): string {
 }
 
 export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }) {
+  const [allowAllModels, setAllowAllModels] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-8 pt-12 sm:pt-16 pb-32 gap-6 sm:gap-8">
@@ -79,8 +81,8 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
         </p>
       </div>
 
-      {/* Two Game Cards */}
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Game Cards */}
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Speed Challenge Card */}
         <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm p-6 sm:p-8 space-y-6 hover:border-orange-500/40 transition-all hover:shadow-[0_0_30px_rgba(249,115,22,0.2)]">
           <div className="space-y-4">
@@ -110,11 +112,24 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
           </div>
           <div className="space-y-3">
             <div className="flex items-center gap-3 flex-wrap">
-              <Link href="/play" className="rounded-full px-6 py-3 bg-[var(--accent)] text-white shadow-[0_12px_30px_rgba(255,92,57,.35)] hover:translate-y-[-1px] transition font-medium">
+              <Link href={`/play?allowAll=${allowAllModels}`} className="rounded-full px-6 py-3 bg-[var(--accent)] text-white shadow-[0_12px_30px_rgba(255,92,57,.35)] hover:translate-y-[-1px] transition font-medium">
                 Start
               </Link>
               <TopicPicker />
             </div>
+            <label className="flex items-center gap-3 text-white/90 drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm cursor-pointer group">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={allowAllModels}
+                  onChange={(e) => setAllowAllModels(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-white/20 rounded-full peer-checked:bg-orange-500 transition-all duration-300 border border-white/30 peer-checked:border-orange-400"></div>
+                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 peer-checked:translate-x-5 shadow-md"></div>
+              </div>
+              <span className="group-hover:text-white transition-colors">compete with other models</span>
+            </label>
           </div>
         </div>
 
@@ -148,6 +163,39 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
           <div className="space-y-3">
             <Link href="/oneword" className="block text-center rounded-full px-6 py-3 bg-[var(--accent)] text-white shadow-[0_12px_30px_rgba(255,92,57,.35)] hover:translate-y-[-1px] transition font-medium">
               Play One-Word
+            </Link>
+          </div>
+        </div>
+
+        {/* TypeRacer Card */}
+        <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm p-6 sm:p-8 space-y-6 hover:border-orange-500/40 transition-all hover:shadow-[0_0_30px_rgba(249,115,22,0.2)]">
+          <div className="space-y-4">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.45)] flex flex-wrap items-center gap-2 justify-start">
+              <span className="bg-gradient-to-r from-orange-400 via-red-500 to-orange-400 bg-clip-text text-transparent">
+                TypeRacer
+              </span>
+            </h2>
+            <p className="text-sm text-white/80 drop-shadow-[0_1px_4px_rgba(0,0,0,.45)]">
+              Type a single word faster than real AI model API response times. Pure speed vs latency.
+            </p>
+            <div className="flex flex-col gap-3 text-white/70 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⌨️</span>
+                <span>Type one word as fast as you can</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🏁</span>
+                <span>Race against real API latencies</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚡</span>
+                <span>Beat the models to the finish</span>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <Link href="/typeracer" className="block text-center rounded-full px-6 py-3 bg-[var(--accent)] text-white shadow-[0_12px_30px_rgba(255,92,57,.35)] hover:translate-y-[-1px] transition font-medium">
+              Start Racing
             </Link>
           </div>
         </div>

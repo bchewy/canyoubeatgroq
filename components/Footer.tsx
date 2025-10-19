@@ -3,7 +3,7 @@ import Image from "next/image";
 export default function Footer() {
   return (
     <footer 
-      className="fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-md border-t border-white/10 z-10"
+      className="bg-black/40 backdrop-blur-md border-t border-white/10"
       style={{ 
         boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.3)'
       }}
