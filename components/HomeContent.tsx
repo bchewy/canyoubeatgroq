@@ -40,7 +40,11 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
   // Filter leaderboard based on toggle
   const filteredEntries = allowAllModels 
     ? entries 
-    : entries.filter(e => GROQ_MODELS.includes(e.aiModel));
+    : entries.filter(e => {
+        // Handle comma-separated model list
+        const models = e.aiModel.split(',');
+        return models.some(model => GROQ_MODELS.includes(model));
+      });
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 pb-32 gap-6 sm:gap-8">
@@ -167,8 +171,24 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
                 <div className="font-mono text-white text-right flex-shrink-0">
                   <div className="text-[10px] sm:text-xs text-white/50 flex items-center justify-end gap-1">
                     <span className="hidden sm:inline">beat</span>
-                    <ModelIcon modelName={e.aiModel} className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                    <span className="truncate max-w-[60px] sm:max-w-none">{e.aiModel}</span>
+                    {e.aiModel.includes(',') ? (
+                      <>
+                        <span className="flex items-center gap-0.5" title={e.aiModel.split(',').join(', ')}>
+                          {e.aiModel.split(',').slice(0, 3).map((model, idx) => (
+                            <ModelIcon key={idx} modelName={model.trim()} className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          ))}
+                        </span>
+                        <span className="truncate max-w-[80px] sm:max-w-none" title={e.aiModel.split(',').join(', ')}>
+                          <span className="hidden sm:inline">{e.aiModel.split(',').map(m => m.trim()).join(', ')}</span>
+                          <span className="sm:hidden">{e.aiModel.split(',').length} models</span>
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <ModelIcon modelName={e.aiModel} className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                        <span className="truncate max-w-[60px] sm:max-w-none">{e.aiModel}</span>
+                      </>
+                    )}
                   </div>
                   <div className="text-[10px] sm:text-sm">
                     +{e.winMarginMs} ms

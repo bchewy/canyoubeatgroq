@@ -48,12 +48,12 @@ export async function getLeaderboard(seed: string, limit = 50): Promise<Leaderbo
 
   if (error) throw error;
 
-  // Manual deduplication: keep only best entry per user
-  const seen = new Map<string, LeaderboardEntry>();
+  // Group by user and collect all their entries
+  const userEntries = new Map<string, LeaderboardEntry[]>();
   (data || []).forEach((r) => {
-    const key = r.user_handle;
+    const handle = r.user_handle as string;
     const entry: LeaderboardEntry = {
-      userHandle: r.user_handle as string,
+      userHandle: handle,
       winMarginMs: r.win_margin_ms as number,
       userTimeMs: r.user_time_ms as number,
       aiTimeMs: r.ai_time_ms as number,
@@ -62,10 +62,33 @@ export async function getLeaderboard(seed: string, limit = 50): Promise<Leaderbo
       createdAt: new Date(r.created_at as string).getTime(),
     };
     
-    const existing = seen.get(key);
-    if (!existing || entry.winMarginMs > existing.winMarginMs) {
-      seen.set(key, entry);
+    if (!userEntries.has(handle)) {
+      userEntries.set(handle, []);
     }
+    userEntries.get(handle)!.push(entry);
+  });
+
+  // For each user, find their best entry and aggregate all models beaten
+  const seen = new Map<string, LeaderboardEntry>();
+  userEntries.forEach((entries, handle) => {
+    // Sort user's entries by win margin to find their best
+    const sorted = entries.sort((a, b) => {
+      if (b.winMarginMs !== a.winMarginMs) return b.winMarginMs - a.winMarginMs;
+      if (a.userTimeMs !== b.userTimeMs) return a.userTimeMs - b.userTimeMs;
+      return b.createdAt - a.createdAt;
+    });
+    
+    // Use the best entry as the base, but collect all models beaten
+    const best = sorted[0];
+    const allModels = entries.map(e => e.aiModel);
+    const uniqueModels = Array.from(new Set(allModels)).sort();
+    
+    // Store best entry with aggregated model info
+    // We'll use a special format: "model1,model2,model3" if multiple
+    seen.set(handle, {
+      ...best,
+      aiModel: uniqueModels.length > 1 ? uniqueModels.join(',') : uniqueModels[0],
+    });
   });
 
   // Sort by win margin and return top N
