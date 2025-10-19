@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import TopicPicker from "@/components/TopicPicker";
 import ModelIcon from "@/components/ModelIcon";
 
@@ -11,6 +10,7 @@ type LeaderboardEntry = {
   userTimeMs: number;
   aiTimeMs: number;
   aiModel: string;
+  problemId: string;
 };
 
 // Simple hash function to generate consistent color from username
@@ -32,22 +32,35 @@ function getInitials(name: string): string {
   return name.substring(0, 2).toUpperCase();
 }
 
-const GROQ_MODELS = ["llama-3.3-70b", "compound", "compound-mini"];
+// Get human-readable problem name from ID
+function getProblemName(problemId: string): string {
+  // Extract the problem type from ID (e.g., "gen-emoji-2025-10--8a3b68aa" -> "emoji")
+  const parts = problemId.split('-');
+  if (parts.length === 0) return problemId;
+  
+  // Handle "gen-TYPE-..." or "q-TYPE-..."
+  const typeIndex = parts[0] === 'gen' || parts[0] === 'q' ? 1 : 0;
+  const type = parts[typeIndex];
+  
+  const typeMap: Record<string, string> = {
+    'emoji': 'Emoji Math',
+    'math': 'Math',
+    'logic': 'Logic',
+    'words': 'Word Puzzle',
+    'string': 'String',
+    'seq': 'Sequence',
+    'text': 'Text',
+    'mental': 'Mental Math',
+    'letters': 'Letters',
+  };
+  
+  return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
+}
 
 export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }) {
-  const [allowAllModels, setAllowAllModels] = useState(false);
-
-  // Filter leaderboard based on toggle
-  const filteredEntries = allowAllModels 
-    ? entries 
-    : entries.filter(e => {
-        // Handle comma-separated model list
-        const models = e.aiModel.split(',');
-        return models.some(model => GROQ_MODELS.includes(model));
-      });
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 pb-32 gap-6 sm:gap-8">
+    <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-8 pt-12 sm:pt-16 pb-32 gap-6 sm:gap-8">
       <div className="text-center space-y-4 sm:space-y-6">
         <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.45)] flex flex-wrap items-center gap-2 sm:gap-3 justify-center">
           Can{" "}
@@ -97,20 +110,11 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
           </div>
           <div className="space-y-3">
             <div className="flex items-center gap-3 flex-wrap">
-              <Link href={`/play?allowAll=${allowAllModels}`} className="rounded-full px-6 py-3 bg-[var(--accent)] text-white shadow-[0_12px_30px_rgba(255,92,57,.35)] hover:translate-y-[-1px] transition font-medium">
+              <Link href="/play" className="rounded-full px-6 py-3 bg-[var(--accent)] text-white shadow-[0_12px_30px_rgba(255,92,57,.35)] hover:translate-y-[-1px] transition font-medium">
                 Start
               </Link>
               <TopicPicker />
             </div>
-            <label className="flex items-center gap-2 text-white/80 drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={allowAllModels}
-                onChange={(e) => setAllowAllModels(e.target.checked)}
-                className="w-4 h-4 rounded border-white/20"
-              />
-              allow all other models
-            </label>
           </div>
         </div>
 
@@ -150,53 +154,75 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
       </div>
 
       {/* Leaderboard */}
-      <div className="w-full max-w-6xl">
+      <div className="w-full max-w-6xl mb-32">
         <h2 className="font-semibold mb-2 text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm sm:text-base">Today&apos;s Top 10 - Speed Challenge</h2>
         <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm" role="list">
-          {filteredEntries.length === 0 ? (
+          {entries.length === 0 ? (
             <div className="p-3 sm:p-4 text-xs sm:text-sm text-white/80">Be first. Set the pace.</div>
           ) : (
-            filteredEntries.map((e, i) => (
-              <div key={i} className="p-2 sm:p-3 flex items-center justify-between gap-2 text-xs sm:text-sm border-t first:border-0 border-white/10" role="listitem">
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                  <span className="w-4 sm:w-6 text-right text-white font-semibold flex-shrink-0">{i + 1}</span>
-                  <div 
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0"
-                    style={{ backgroundColor: getAvatarColor(e.userHandle) }}
-                  >
-                    {getInitials(e.userHandle)}
+            entries.map((e, i) => {
+              const models = e.aiModel.includes(',') ? e.aiModel.split(',').map(m => m.trim()) : [e.aiModel];
+              const modelText = models.length > 3 
+                ? `${models.slice(0, 2).join(', ')} +${models.length - 2} more`
+                : models.join(', ');
+              
+              return (
+                <div 
+                  key={i} 
+                  className="group px-2 py-1.5 sm:px-3 sm:py-2 flex items-center gap-2 sm:gap-3 border-t first:border-0 border-white/10 hover:bg-white/5 transition-colors cursor-default" 
+                  role="listitem"
+                >
+                  {/* Rank + Avatar */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                    <span className="w-3 sm:w-4 text-right text-white font-bold text-[10px] sm:text-xs">
+                      {i + 1}
+                    </span>
+                    <div 
+                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[8px] sm:text-[9px] font-bold"
+                      style={{ backgroundColor: getAvatarColor(e.userHandle) }}
+                    >
+                      {getInitials(e.userHandle)}
+                    </div>
                   </div>
-                  <span className="font-mono text-white text-xs sm:text-sm truncate">{e.userHandle}</span>
-                </div>
-                <div className="font-mono text-white text-right flex-shrink-0">
-                  <div className="text-[10px] sm:text-xs text-white/50 flex items-center justify-end gap-1">
-                    <span className="hidden sm:inline">beat</span>
-                    {e.aiModel.includes(',') ? (
-                      <>
-                        <span className="flex items-center gap-0.5" title={e.aiModel.split(',').join(', ')}>
-                          {e.aiModel.split(',').slice(0, 3).map((model, idx) => (
-                            <ModelIcon key={idx} modelName={model.trim()} className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+
+                  {/* Story format */}
+                  <div className="flex-1 min-w-0 text-[10px] sm:text-xs text-white/90 leading-relaxed">
+                    <span className="font-mono font-semibold text-white">{e.userHandle}</span>
+                    {' '}beat{' '}
+                    <span className="inline-flex items-center gap-1 relative group/models">
+                      <span className="inline-flex items-center gap-0.5">
+                        {models.slice(0, 3).map((model, idx) => (
+                          <ModelIcon key={idx} modelName={model} className="w-2.5 h-2.5 inline-block" />
+                        ))}
+                      </span>
+                      <span className="text-white/80 font-medium cursor-help">
+                        {modelText}
+                      </span>
+                      {models.length > 1 && (
+                        <span className="invisible group-hover/models:visible absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-black/95 border border-white/20 rounded text-[10px] text-white/90 whitespace-nowrap z-50 pointer-events-none">
+                          {models.map((model, idx) => (
+                            <span key={idx} className="flex items-center gap-1.5 min-w-0">
+                              <ModelIcon modelName={model} className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{model}</span>
+                            </span>
                           ))}
                         </span>
-                        <span className="truncate max-w-[80px] sm:max-w-none" title={e.aiModel.split(',').join(', ')}>
-                          <span className="hidden sm:inline">{e.aiModel.split(',').map(m => m.trim()).join(', ')}</span>
-                          <span className="sm:hidden">{e.aiModel.split(',').length} models</span>
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <ModelIcon modelName={e.aiModel} className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                        <span className="truncate max-w-[60px] sm:max-w-none">{e.aiModel}</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="text-[10px] sm:text-sm">
-                    +{e.winMarginMs} ms
-                    <span className="hidden sm:inline text-white/60"> ({e.userTimeMs} {"<"} {e.aiTimeMs})</span>
+                      )}
+                    </span>
+                    {' '}at{' '}
+                    <span className="text-white/70 font-medium" title={e.problemId}>{getProblemName(e.problemId)}</span>
+                    {' '}in{' '}
+                    <span className="font-mono font-semibold text-green-400">
+                      {(e.userTimeMs / 1000).toFixed(2)}s
+                    </span>
+                    {' '}vs{' '}
+                    <span className="font-mono text-white/70">
+                      {(e.aiTimeMs / 1000).toFixed(2)}s
+                    </span>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
