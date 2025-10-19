@@ -1,6 +1,6 @@
-# Beat GPT-4 Speedrun (MVP)
+# Canyoubeatgroq.com
 
-Race GPT-4 to answer bite-size prompts. Win if your correct answer lands before the AI’s.
+A simple game to test your (a human)'s speed and accuracy against AI models from the fastest infernce providers.
 
 ## Stack
 - Next.js (App Router, TS)
