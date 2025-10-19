@@ -36,24 +36,22 @@ export async function getLeaderboard(seed: string, limit = 50): Promise<Leaderbo
   const sb = supabasePublic() || supabaseAdmin();
   if (!sb) throw new Error("Supabase URL or anon key missing");
 
-  // Use DISTINCT ON to get only the best entry per user+problem combination
-  // PostgreSQL DISTINCT ON keeps the first row for each combination based on ORDER BY
+  // Fetch top entries sorted by performance (not alphabetically by username)
   const { data, error } = await sb
     .from("leaderboard_results")
     .select("user_handle, win_margin_ms, user_time_ms, ai_time_ms, ai_model, problem_id, created_at")
     .eq("seed", seed)
-    .order("user_handle", { ascending: true })
-    .order("problem_id", { ascending: true })
     .order("win_margin_ms", { ascending: false })
     .order("user_time_ms", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(limit * 3); // Fetch more to account for deduplication
 
   if (error) throw error;
 
-  // Manual deduplication: keep only best entry per user+problem
+  // Manual deduplication: keep only best entry per user
   const seen = new Map<string, LeaderboardEntry>();
   (data || []).forEach((r) => {
-    const key = `${r.user_handle}:${r.problem_id}`;
+    const key = r.user_handle;
     const entry: LeaderboardEntry = {
       userHandle: r.user_handle as string,
       winMarginMs: r.win_margin_ms as number,
