@@ -14,6 +14,15 @@ type LeaderboardEntry = {
   problemId: string;
 };
 
+type OneWordLeaderboardEntry = {
+  userHandle: string;
+  topic: string;
+  userTimeMs: number;
+  aiModelsBeaten: string[];
+  numAiBeaten: number;
+  createdAt: number;
+};
+
 // Simple hash function to generate consistent color from username
 function getAvatarColor(name: string): string {
   let hash = 0;
@@ -79,8 +88,15 @@ function getModelDisplayName(modelName: string): string {
   return modelName;
 }
 
-export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }) {
+export default function HomeContent({ 
+  speedEntries, 
+  oneWordEntries 
+}: { 
+  speedEntries: LeaderboardEntry[];
+  oneWordEntries: OneWordLeaderboardEntry[];
+}) {
   const [allowAllModels, setAllowAllModels] = useState(false);
+  const [activeTab, setActiveTab] = useState<"speed" | "oneword">("speed");
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-8 pt-12 sm:pt-16 pb-32 gap-6 sm:gap-8">
@@ -224,12 +240,39 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
 
       {/* Leaderboard */}
       <div className="w-full max-w-6xl mb-32">
-        <h2 className="font-semibold mb-2 text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm sm:text-base">All-Time Top 10 - Speed Challenge</h2>
-        <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm" role="list">
-          {entries.length === 0 ? (
-            <div className="p-3 sm:p-4 text-xs sm:text-sm text-white/80">Be first. Set the pace.</div>
-          ) : (
-            entries.map((e, i) => {
+        <div className="flex items-center gap-4 mb-3">
+          <h2 className="font-semibold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm sm:text-base">All-Time Top 10</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab("speed")}
+              className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                activeTab === "speed"
+                  ? "bg-[var(--accent)] text-white shadow-[0_4px_12px_rgba(255,92,57,.3)]"
+                  : "bg-white/10 text-white/70 hover:bg-white/15"
+              }`}
+            >
+              Speed Challenge
+            </button>
+            <button
+              onClick={() => setActiveTab("oneword")}
+              className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                activeTab === "oneword"
+                  ? "bg-[var(--accent)] text-white shadow-[0_4px_12px_rgba(255,92,57,.3)]"
+                  : "bg-white/10 text-white/70 hover:bg-white/15"
+              }`}
+            >
+              One-Word
+            </button>
+          </div>
+        </div>
+
+        {/* Speed Challenge Leaderboard */}
+        {activeTab === "speed" && (
+          <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm" role="list">
+            {speedEntries.length === 0 ? (
+              <div className="p-3 sm:p-4 text-xs sm:text-sm text-white/80">Be first. Set the pace.</div>
+            ) : (
+              speedEntries.map((e, i) => {
               const models = e.aiModel.includes(',') 
                 ? e.aiModel.split(',').map(m => getModelDisplayName(m.trim()))
                 : [getModelDisplayName(e.aiModel)];
@@ -293,9 +336,79 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
                   </div>
                 </div>
               );
-            })
-          )}
-        </div>
+              })
+            )}
+          </div>
+        )}
+
+        {/* One-Word Challenge Leaderboard */}
+        {activeTab === "oneword" && (
+          <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm" role="list">
+            {oneWordEntries.length === 0 ? (
+              <div className="p-3 sm:p-4 text-xs sm:text-sm text-white/80">Be first. Set the pace.</div>
+            ) : (
+              oneWordEntries.map((e, i) => {
+                const models = e.aiModelsBeaten.map(m => getModelDisplayName(m));
+                const modelText = models.length > 3 
+                  ? `${models.slice(0, 2).join(', ')} +${models.length - 2} more`
+                  : models.join(', ');
+                
+                return (
+                  <div 
+                    key={i} 
+                    className="group px-2 py-1.5 sm:px-3 sm:py-2 flex items-center gap-2 sm:gap-3 border-t first:border-0 border-white/10 hover:bg-white/5 transition-colors cursor-default" 
+                    role="listitem"
+                  >
+                    {/* Rank + Avatar */}
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                      <span className="w-3 sm:w-4 text-right text-white font-bold text-[10px] sm:text-xs">
+                        {i + 1}
+                      </span>
+                      <div 
+                        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[8px] sm:text-[9px] font-bold"
+                        style={{ backgroundColor: getAvatarColor(e.userHandle) }}
+                      >
+                        {getInitials(e.userHandle)}
+                      </div>
+                    </div>
+
+                    {/* Story format */}
+                    <div className="flex-1 min-w-0 text-[10px] sm:text-xs text-white/90 leading-relaxed">
+                      <span className="font-mono font-semibold text-white">{e.userHandle}</span>
+                      {' '}beat{' '}
+                      <span className="inline-flex items-center gap-1 relative group/models">
+                        <span className="inline-flex items-center gap-0.5">
+                          {models.slice(0, 3).map((model, idx) => (
+                            <ModelIcon key={idx} modelName={model} className="w-2.5 h-2.5 inline-block" />
+                          ))}
+                        </span>
+                        <span className="text-white/80 font-medium cursor-help">
+                          {e.numAiBeaten} {e.numAiBeaten === 1 ? 'model' : 'models'}
+                        </span>
+                        {models.length > 1 && (
+                          <span className="invisible group-hover/models:visible absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-black/95 border border-white/20 rounded text-[10px] text-white/90 whitespace-nowrap z-50 pointer-events-none">
+                            {models.map((model, idx) => (
+                              <span key={idx} className="flex items-center gap-1.5 min-w-0">
+                                <ModelIcon modelName={model} className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{model}</span>
+                              </span>
+                            ))}
+                          </span>
+                        )}
+                      </span>
+                      {' '}on{' '}
+                      <span className="text-orange-400 font-semibold">&quot;{e.topic}&quot;</span>
+                      {' '}in{' '}
+                      <span className="font-mono font-semibold text-green-400">
+                        {(e.userTimeMs / 1000).toFixed(2)}s
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

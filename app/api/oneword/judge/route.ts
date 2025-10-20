@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { addOneWordLeaderboard } from "@/lib/leaderboard";
 
 export const runtime = "nodejs";
 
@@ -9,11 +10,14 @@ type AiAnswer = {
 
 export async function POST(req: Request) {
   try {
-    const { question, userAnswer, aiAnswers, expectedAnswer } = (await req.json()) as {
+    const { question, userAnswer, aiAnswers, expectedAnswer, topic, userTimeMs, userHandle } = (await req.json()) as {
       question: string;
       userAnswer: string;
       aiAnswers: AiAnswer[];
       expectedAnswer: string;
+      topic?: string;
+      userTimeMs?: number;
+      userHandle?: string;
     };
 
     console.log(`[judge] Received request with ${aiAnswers?.length || 0} AI answers`);
@@ -139,14 +143,42 @@ Please reason through whether each answer is correct or acceptable. Then provide
       winner = 'tie';
     }
 
+    const aiResultsData = filteredAiCorrect.map((ai: { model: string; correct: boolean }) => ({
+      model: ai.model,
+      answer: aiAnswers.find((a) => a.model === ai.model)?.answer || "",
+      correct: ai.correct,
+    }));
+
+    // Save to leaderboard if user was correct and has a handle
+    if (userCorrect && topic && userTimeMs && userHandle) {
+      try {
+        // Find AI models that the user beat (user correct, AI incorrect)
+        const aiModelsBeaten = aiResultsData
+          .filter((ai) => !ai.correct)
+          .map((ai) => ai.model);
+        
+        // Save even if aiModelsBeaten is empty (tie with all AIs)
+        await addOneWordLeaderboard({
+          userHandle,
+          topic,
+          question,
+          expectedAnswer,
+          userAnswer,
+          userTimeMs,
+          userCorrect: true,
+          aiModelsBeaten,
+        });
+        console.log(`[judge] Saved to leaderboard: ${userHandle} beat ${aiModelsBeaten.length} AI models`);
+      } catch (leaderboardError) {
+        // Don't fail the whole request if leaderboard save fails
+        console.error("[judge] Failed to save to leaderboard:", leaderboardError);
+      }
+    }
+
     return NextResponse.json({
       reasoning: judgment.reasoning,
       userCorrect: judgment.userCorrect,
-      aiResults: filteredAiCorrect.map((ai: { model: string; correct: boolean }) => ({
-        model: ai.model,
-        answer: aiAnswers.find((a) => a.model === ai.model)?.answer || "",
-        correct: ai.correct,
-      })),
+      aiResults: aiResultsData,
       winner,
     });
   } catch (error) {

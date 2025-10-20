@@ -38,6 +38,7 @@ export default function OneWordPage() {
   const [judgment, setJudgment] = useState<JudgmentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
+  const [userHandle, setUserHandle] = useState<string>("");
 
   const generateQuestion = useCallback(async () => {
     if (!topic.trim()) return;
@@ -144,6 +145,9 @@ export default function OneWordPage() {
           userAnswer: userAnswer.trim(),
           aiAnswers: aiResults.map((ai) => ({ model: ai.model, answer: ai.answer })),
           expectedAnswer: question.expectedAnswer,
+          topic: topic,
+          userTimeMs: timeMs,
+          userHandle: userHandle.trim() || undefined,
         }),
       });
 
@@ -223,6 +227,13 @@ export default function OneWordPage() {
                 placeholder="e.g., dinosaurs, chemistry, movies..."
                 className="w-full px-4 py-3 border border-white/20 rounded-md bg-black/20 text-white placeholder:text-white/50"
                 autoFocus
+              />
+              <input
+                type="text"
+                value={userHandle}
+                onChange={(e) => setUserHandle(e.target.value)}
+                placeholder="your handle (optional, for leaderboard)"
+                className="w-full px-4 py-3 border border-white/20 rounded-md bg-black/20 text-white placeholder:text-white/50"
               />
               <button
                 type="submit"

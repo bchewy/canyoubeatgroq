@@ -55,3 +55,12 @@ export type OneWordJudgment = {
   winner: 'user' | 'ai' | 'tie';
 };
 
+export type OneWordLeaderboardEntry = {
+  userHandle: string;
+  topic: string;
+  userTimeMs: number;
+  aiModelsBeaten: string[];
+  numAiBeaten: number;
+  createdAt: number;
+};
+
