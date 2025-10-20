@@ -61,6 +61,7 @@ function PlayPageContent() {
   const [seed, setSeed] = useState<string>("");
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<SubmitResp | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const issuedAtMsRef = useRef<number | null>(null);
   const cachedAiResultsRef = useRef<ModelResult[] | null>(null);
   const [showShareBanner, setShowShareBanner] = useState(false);
@@ -133,27 +134,32 @@ function PlayPageContent() {
     }
   }, [readyToStart, problem, startRound]);
 
-  const canAnswer = useMemo(() => countdown === 0 && !result, [countdown, result]);
+  const canAnswer = useMemo(() => countdown === 0 && !result && !isSubmitting, [countdown, result, isSubmitting]);
 
   const handleSubmit = useCallback(async (val?: string) => {
     if (!problem || !startToken || !canAnswer) return;
-    const payload = {
-      problemId: problem.id,
-      startToken,
-      userAnswer: (val ?? answer).trim(),
-      desiredHandle: handle.trim(),
-      cachedAiResults: cachedAiResultsRef.current,
-      allowAllModels,
-    };
-    const res = await fetch("/api/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = (await res.json()) as SubmitResp;
-    setResult(data);
-    const reduce = typeof window !== "undefined" && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!reduce && data.outcome === "win") confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        problemId: problem.id,
+        startToken,
+        userAnswer: (val ?? answer).trim(),
+        desiredHandle: handle.trim(),
+        cachedAiResults: cachedAiResultsRef.current,
+        allowAllModels,
+      };
+      const res = await fetch("/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json()) as SubmitResp;
+      setResult(data);
+      const reduce = typeof window !== "undefined" && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && data.outcome === "win") confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [problem, startToken, canAnswer, answer, handle, allowAllModels]);
 
   const deadlineMs = issuedAtMsRef.current ? issuedAtMsRef.current + 30_000 : null;
@@ -234,6 +240,15 @@ function PlayPageContent() {
                     Submit
                   </button>
                 </form>
+              )}
+
+              {isSubmitting && (
+                <div className="mt-4 p-3 rounded-md border backdrop-blur-sm text-white bg-black/30 border-white/20" aria-live="polite">
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></div>
+                    <span className="text-sm">Waiting for AI models to answer...</span>
+                  </div>
+                </div>
               )}
 
               {result && (
