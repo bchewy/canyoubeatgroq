@@ -6,6 +6,7 @@ import GridDistortion from "@/components/GridDistortion";
 import Footer from "@/components/Footer";
 import RoadmapToast from "@/components/RoadmapToast";
 import ClickSpark from "@/components/ClickSpark";
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata: Metadata = {
   title: "Can you beat groq?",
@@ -63,6 +64,7 @@ export default function RootLayout({
         </ClickSpark>
         <Footer />
         <RoadmapToast />
+        <Analytics />
       </body>
     </html>
   );
