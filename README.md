@@ -2,6 +2,9 @@
 
 A simple game to test your (a human)'s speed and accuracy against AI models from the fastest infernce providers.
 
+![Preview](./preview.png)
+
+
 ## Stack
 - Next.js (App Router, TS)
 - Tailwind CSS

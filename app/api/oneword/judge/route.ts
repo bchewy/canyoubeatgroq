@@ -154,8 +154,8 @@ Please reason through whether each answer is correct or acceptable. Then provide
       try {
         // Find AI models that the user beat (user correct, AI incorrect)
         const aiModelsBeaten = aiResultsData
-          .filter((ai) => !ai.correct)
-          .map((ai) => ai.model);
+          .filter((ai: { model: string; answer: string; correct: boolean }) => !ai.correct)
+          .map((ai: { model: string; answer: string; correct: boolean }) => ai.model);
         
         // Save even if aiModelsBeaten is empty (tie with all AIs)
         await addOneWordLeaderboard({
