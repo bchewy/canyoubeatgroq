@@ -1,8 +1,10 @@
 # Canyoubeatgroq.com
 
-A simple game to test your (a human)'s speed and accuracy against AI models from the fastest infernce providers.
+A simple game platform to test your (a human)'s speed and accuracy against AI models(openai, groq, gemini) from the fastest inference provider (groq).
 
-![Preview](./preview.png)
+Built at the [first official Cursor Hackathon Singapore, 2025](https://luma.com/cursor-hack-sg?tk=VzQhWL) 🎉
+
+![Preview](./app/preview.png)
 
 
 ## Stack
