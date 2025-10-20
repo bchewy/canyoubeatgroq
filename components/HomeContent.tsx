@@ -58,6 +58,27 @@ function getProblemName(problemId: string): string {
   return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
 }
 
+// Add provider prefix to model names for display
+function getModelDisplayName(modelName: string): string {
+  // Google models
+  if (modelName.startsWith('gemini')) {
+    return `google/${modelName}`;
+  }
+  
+  // OpenAI models
+  if (modelName.startsWith('gpt-4') || modelName.startsWith('gpt-5')) {
+    return `openai/${modelName}`;
+  }
+  
+  // Groq models (llama, compound, gpt-oss)
+  if (modelName.startsWith('llama') || modelName.startsWith('compound') || modelName.startsWith('gpt-oss')) {
+    return `groq/${modelName}`;
+  }
+  
+  // Fallback - no prefix
+  return modelName;
+}
+
 export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }) {
   const [allowAllModels, setAllowAllModels] = useState(false);
 
@@ -203,13 +224,15 @@ export default function HomeContent({ entries }: { entries: LeaderboardEntry[] }
 
       {/* Leaderboard */}
       <div className="w-full max-w-6xl mb-32">
-        <h2 className="font-semibold mb-2 text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm sm:text-base">Today&apos;s Top 10 - Speed Challenge</h2>
+        <h2 className="font-semibold mb-2 text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm sm:text-base">All-Time Top 10 - Speed Challenge</h2>
         <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm" role="list">
           {entries.length === 0 ? (
             <div className="p-3 sm:p-4 text-xs sm:text-sm text-white/80">Be first. Set the pace.</div>
           ) : (
             entries.map((e, i) => {
-              const models = e.aiModel.includes(',') ? e.aiModel.split(',').map(m => m.trim()) : [e.aiModel];
+              const models = e.aiModel.includes(',') 
+                ? e.aiModel.split(',').map(m => getModelDisplayName(m.trim()))
+                : [getModelDisplayName(e.aiModel)];
               const modelText = models.length > 3 
                 ? `${models.slice(0, 2).join(', ')} +${models.length - 2} more`
                 : models.join(', ');

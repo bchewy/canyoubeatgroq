@@ -1,7 +1,7 @@
 import Image from "next/image";
 import geminiSvg from "@/app/gemini.svg";
 import openaiSvg from "@/app/openai.svg";
-import groqSvg from "@/app/groq.svg";
+import groqWebp from "../public/groq.webp";
 
 type ModelIconProps = {
   provider?: string;
@@ -11,9 +11,17 @@ type ModelIconProps = {
 
 function inferProvider(modelName: string): string | null {
   const lower = modelName.toLowerCase();
+  
+  // Check for explicit provider prefix first
+  if (lower.startsWith("google/")) return "Google";
+  if (lower.startsWith("openai/")) return "OpenAI";
+  if (lower.startsWith("groq/")) return "Groq";
+  
+  // Fallback to pattern matching (for legacy data without prefixes)
   if (lower.startsWith("gemini")) return "Google";
   if (lower.startsWith("gpt")) return "OpenAI";
   if (lower.includes("llama") || lower.includes("compound")) return "Groq";
+  
   return null;
 }
 
@@ -35,7 +43,7 @@ export default function ModelIcon({ provider, modelName, className = "w-4 h-4" }
       alt = "OpenAI";
       break;
     case "Groq":
-      icon = groqSvg;
+      icon = groqWebp;
       alt = "Groq";
       break;
     default:

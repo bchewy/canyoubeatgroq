@@ -32,15 +32,14 @@ export async function addLeaderboard(seed: string, entry: LeaderboardEntry) {
   }
 }
 
-export async function getLeaderboard(seed: string, limit = 50): Promise<LeaderboardEntry[]> {
+export async function getLeaderboard(limit = 50): Promise<LeaderboardEntry[]> {
   const sb = supabasePublic() || supabaseAdmin();
   if (!sb) throw new Error("Supabase URL or anon key missing");
 
-  // Fetch ALL entries for the seed, sorted by performance
+  // Fetch ALL entries, sorted by performance
   const { data, error } = await sb
     .from("leaderboard_results")
     .select("user_handle, win_margin_ms, user_time_ms, ai_time_ms, ai_model, problem_id, created_at")
-    .eq("seed", seed)
     .order("win_margin_ms", { ascending: false })
     .order("user_time_ms", { ascending: true })
     .order("created_at", { ascending: false });
