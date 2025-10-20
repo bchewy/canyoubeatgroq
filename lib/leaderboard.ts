@@ -131,13 +131,13 @@ export async function getOneWordLeaderboard(limit = 50): Promise<OneWordLeaderbo
   const sb = supabasePublic() || supabaseAdmin();
   if (!sb) throw new Error("Supabase URL or anon key missing");
 
-  // Fetch all correct entries, sorted by performance
+  // Fetch all correct entries, sorted by performance (speed first)
   const { data, error } = await sb
     .from("oneword_leaderboard_results")
     .select("user_handle, topic, user_time_ms, ai_models_beaten, num_ai_beaten, created_at")
     .eq("user_correct", true)
-    .order("num_ai_beaten", { ascending: false })
     .order("user_time_ms", { ascending: true })
+    .order("num_ai_beaten", { ascending: false })
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -160,11 +160,11 @@ export async function getOneWordLeaderboard(limit = 50): Promise<OneWordLeaderbo
     }
   });
 
-  // Return top N users sorted by performance
+  // Return top N users sorted by performance (speed first, then AIs beaten)
   return Array.from(userBest.values())
     .sort((a, b) => {
-      if (b.numAiBeaten !== a.numAiBeaten) return b.numAiBeaten - a.numAiBeaten;
       if (a.userTimeMs !== b.userTimeMs) return a.userTimeMs - b.userTimeMs;
+      if (b.numAiBeaten !== a.numAiBeaten) return b.numAiBeaten - a.numAiBeaten;
       return b.createdAt - a.createdAt;
     })
     .slice(0, limit);

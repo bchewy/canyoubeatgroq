@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 type AiAnswer = {
   model: string;
   answer: string;
+  timeMs?: number;
 };
 
 export async function POST(req: Request) {
@@ -139,7 +140,28 @@ Please reason through whether each answer is correct or acceptable. Then provide
       winner = 'user';
     } else if (!userCorrect && anyAiCorrect) {
       winner = 'ai';
+    } else if (userCorrect && anyAiCorrect) {
+      // Both correct - compare speeds
+      // User wins if they beat at least one correct AI model
+      const correctAiModels = filteredAiCorrect.filter((ai: { correct: boolean }) => ai.correct);
+      const userBeatAnyAi = correctAiModels.some((ai: { model: string }) => {
+        const aiData = aiAnswers.find(a => a.model === ai.model);
+        return aiData?.timeMs && userTimeMs && userTimeMs < aiData.timeMs;
+      });
+      
+      console.log(`[judge] Speed comparison: user ${userTimeMs}ms, beat any AI: ${userBeatAnyAi}`);
+      correctAiModels.forEach((ai: { model: string }) => {
+        const aiData = aiAnswers.find(a => a.model === ai.model);
+        console.log(`  - ${ai.model}: ${aiData?.timeMs}ms (beat: ${aiData?.timeMs && userTimeMs && userTimeMs < aiData.timeMs})`);
+      });
+      
+      if (userBeatAnyAi) {
+        winner = 'user';
+      } else {
+        winner = 'tie';
+      }
     } else {
+      // Both wrong
       winner = 'tie';
     }
 
@@ -152,10 +174,19 @@ Please reason through whether each answer is correct or acceptable. Then provide
     // Save to leaderboard if user was correct and has a handle
     if (userCorrect && topic && userTimeMs && userHandle) {
       try {
-        // Find AI models that the user beat (user correct, AI incorrect)
+        // Find AI models that the user beat:
+        // 1. AI got it wrong, OR
+        // 2. AI got it correct but user was faster
         const aiModelsBeaten = aiResultsData
-          .filter((ai: { model: string; answer: string; correct: boolean }) => !ai.correct)
+          .filter((ai: { model: string; answer: string; correct: boolean }) => {
+            if (!ai.correct) return true; // AI incorrect
+            // AI correct - check speed
+            const aiData = aiAnswers.find(a => a.model === ai.model);
+            return aiData?.timeMs && userTimeMs < aiData.timeMs;
+          })
           .map((ai: { model: string; answer: string; correct: boolean }) => ai.model);
+        
+        console.log(`[judge] AI models beaten (incorrect or slower): ${aiModelsBeaten.join(', ') || 'none'}`);
         
         // Save even if aiModelsBeaten is empty (tie with all AIs)
         await addOneWordLeaderboard({

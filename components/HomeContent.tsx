@@ -382,19 +382,19 @@ export default function HomeContent({
                             <ModelIcon key={idx} modelName={model} className="w-2.5 h-2.5 inline-block" />
                           ))}
                         </span>
-                        <span className="text-white/80 font-medium cursor-help">
-                          {e.numAiBeaten} {e.numAiBeaten === 1 ? 'model' : 'models'}
+                      <span className="text-white/80 font-medium cursor-help">
+                        {e.numAiBeaten} {e.numAiBeaten === 1 ? 'model' : 'models'}
+                      </span>
+                      {models.length > 0 && (
+                        <span className="invisible group-hover/models:visible absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-black/95 border border-white/20 rounded text-[10px] text-white/90 whitespace-nowrap z-50 pointer-events-none">
+                          {models.map((model, idx) => (
+                            <span key={idx} className="flex items-center gap-1.5 min-w-0">
+                              <ModelIcon modelName={model} className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{model}</span>
+                            </span>
+                          ))}
                         </span>
-                        {models.length > 1 && (
-                          <span className="invisible group-hover/models:visible absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-black/95 border border-white/20 rounded text-[10px] text-white/90 whitespace-nowrap z-50 pointer-events-none">
-                            {models.map((model, idx) => (
-                              <span key={idx} className="flex items-center gap-1.5 min-w-0">
-                                <ModelIcon modelName={model} className="w-3 h-3 flex-shrink-0" />
-                                <span className="truncate">{model}</span>
-                              </span>
-                            ))}
-                          </span>
-                        )}
+                      )}
                       </span>
                       {' '}on{' '}
                       <span className="text-orange-400 font-semibold">&quot;{e.topic}&quot;</span>

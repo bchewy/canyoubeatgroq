@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
 import ModelIcon from "@/components/ModelIcon";
@@ -38,7 +38,19 @@ export default function OneWordPage() {
   const [judgment, setJudgment] = useState<JudgmentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
-  const [userHandle, setUserHandle] = useState<string>("");
+  const [handle, setHandle] = useState<string>("");
+  const [needHandle, setNeedHandle] = useState(false);
+  const aiResultsLoadingRef = useRef(false);
+  const aiResultsRef = useRef<AiResult[]>([]);
+
+  useEffect(() => {
+    const savedHandle = typeof window !== "undefined" ? localStorage.getItem("beatbot_handle") : null;
+    if (savedHandle) {
+      setHandle(savedHandle);
+    } else {
+      setNeedHandle(true);
+    }
+  }, []);
 
   const generateQuestion = useCallback(async () => {
     if (!topic.trim()) return;
@@ -77,7 +89,10 @@ export default function OneWordPage() {
       }, 1000);
 
       // Pre-fetch AI answers
+      setAiResults([]);
+      aiResultsRef.current = [];
       setAiResultsLoading(true);
+      aiResultsLoadingRef.current = true;
       fetch("/api/oneword/ai-solve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -87,6 +102,7 @@ export default function OneWordPage() {
         .then((data) => {
           if (data.results) {
             setAiResults(data.results);
+            aiResultsRef.current = data.results;
             console.log(`[oneword] Got ${data.results.length} AI results`);
           } else {
             console.warn("[oneword] No AI results returned:", data);
@@ -97,6 +113,7 @@ export default function OneWordPage() {
         })
         .finally(() => {
           setAiResultsLoading(false);
+          aiResultsLoadingRef.current = false;
         });
     } catch (err) {
       console.error("Error generating question:", err);
@@ -118,22 +135,26 @@ export default function OneWordPage() {
       return;
     }
 
-    // Wait for AI results if still loading
-    if (aiResultsLoading) {
-      console.log("[oneword] Waiting for AI results to finish loading...");
-      setError("Please wait, AI models are still answering...");
-      return;
+    setError(null);
+    setGameState("judging");
+
+    // If AI results are still loading, wait for them
+    if (aiResultsLoadingRef.current) {
+      console.log("[oneword] User submitted early, waiting for AI results...");
+      const maxWaitTime = 10000; // 10 seconds max
+      const startWait = Date.now();
+      while (aiResultsLoadingRef.current && Date.now() - startWait < maxWaitTime) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      console.log(`[oneword] Waited ${Date.now() - startWait}ms for AI results, got ${aiResultsRef.current.length} results`);
     }
 
     // Warn if no AI results (but continue anyway)
-    if (aiResults.length === 0) {
-      console.warn("[oneword] No AI results available, submitting anyway");
+    if (aiResultsRef.current.length === 0) {
+      console.warn("[oneword] No AI results available after waiting, submitting anyway");
     } else {
-      console.log(`[oneword] Submitting with ${aiResults.length} AI results`);
+      console.log(`[oneword] Submitting with ${aiResultsRef.current.length} AI results`);
     }
-
-    setError(null);
-    setGameState("judging");
 
     try {
       // Get judgment
@@ -143,11 +164,11 @@ export default function OneWordPage() {
         body: JSON.stringify({
           question: question.question,
           userAnswer: userAnswer.trim(),
-          aiAnswers: aiResults.map((ai) => ({ model: ai.model, answer: ai.answer })),
+          aiAnswers: aiResultsRef.current.map((ai) => ({ model: ai.model, answer: ai.answer, timeMs: ai.timeMs })),
           expectedAnswer: question.expectedAnswer,
           topic: topic,
           userTimeMs: timeMs,
-          userHandle: userHandle.trim() || undefined,
+          userHandle: handle.trim() || undefined,
         }),
       });
 
@@ -169,7 +190,7 @@ export default function OneWordPage() {
       setError("Failed to judge answers. Please try again.");
       setGameState("answering");
     }
-  }, [question, userAnswer, startTime, aiResults, aiResultsLoading]);
+  }, [question, userAnswer, startTime, aiResults, aiResultsLoading, topic, handle]);
 
   const resetGame = useCallback(() => {
     setGameState("topic-input");
@@ -179,7 +200,9 @@ export default function OneWordPage() {
     setUserAnswer("");
     setUserTimeMs(null);
     setAiResults([]);
+    aiResultsRef.current = [];
     setAiResultsLoading(false);
+    aiResultsLoadingRef.current = false;
     setJudgment(null);
     setError(null);
     setStartTime(null);
@@ -195,6 +218,7 @@ export default function OneWordPage() {
             </Link>
             <h1 className="text-xl font-semibold text-white">One-Word Challenge</h1>
           </div>
+          <div className="text-sm text-white/65">{handle ? `@${handle}` : ""}</div>
         </div>
 
         {error && (
@@ -227,13 +251,6 @@ export default function OneWordPage() {
                 placeholder="e.g., dinosaurs, chemistry, movies..."
                 className="w-full px-4 py-3 border border-white/20 rounded-md bg-black/20 text-white placeholder:text-white/50"
                 autoFocus
-              />
-              <input
-                type="text"
-                value={userHandle}
-                onChange={(e) => setUserHandle(e.target.value)}
-                placeholder="your handle (optional, for leaderboard)"
-                className="w-full px-4 py-3 border border-white/20 rounded-md bg-black/20 text-white placeholder:text-white/50"
               />
               <button
                 type="submit"
@@ -450,6 +467,46 @@ export default function OneWordPage() {
           </div>
         )}
       </div>
+
+      {/* Handle gate modal */}
+      {needHandle && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" aria-modal="true">
+          <div className="w-full max-w-sm bg-white rounded-lg p-4 sm:p-5 space-y-3 text-black" role="dialog" aria-labelledby="handle-title">
+            <div id="handle-title" className="text-lg font-semibold text-black">Choose a handle</div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const v = handle.trim().slice(0, 20).replace(/[^a-zA-Z0-9_\-.]/g, "");
+                if (!v) return;
+                localStorage.setItem("beatbot_handle", v);
+                setHandle(v);
+                setNeedHandle(false);
+              }}
+              className="space-y-3"
+            >
+              <input
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                placeholder="your handle"
+                className="w-full px-3 py-2 border rounded-md text-black placeholder:text-black"
+                autoFocus
+              />
+              <button type="submit" className="w-full rounded-md px-4 py-2 bg-[var(--accent)] text-white">Save & Continue</button>
+            </form>
+            <button
+              className="text-xs text-black underline"
+              onClick={() => {
+                const v = "anon";
+                localStorage.setItem("beatbot_handle", v);
+                setHandle(v);
+                setNeedHandle(false);
+              }}
+            >
+              Continue as anon
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
