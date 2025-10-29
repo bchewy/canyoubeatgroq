@@ -258,62 +258,8 @@ export default function HomeContent({
         </div>
       </div>
 
-      {/* Recent Activity History */}
-      <div className="w-full max-w-6xl">
-        <h2 className="font-semibold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm sm:text-base mb-3">Recent Activity (Last 50)</h2>
-        <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm max-h-[400px] overflow-y-auto" role="list">
-          {historyEntries.length === 0 ? (
-            <div className="p-3 sm:p-4 text-xs sm:text-sm text-white/80">No activity yet. Be the first!</div>
-          ) : (
-            historyEntries.map((e, i) => {
-              const gameLabel = e.gameType === 'puzzle' ? 'Speed Challenge' : e.gameType === 'oneword' ? 'One-Word' : 'TypeRacer';
-              const gameColor = e.gameType === 'puzzle' ? 'text-blue-400' : e.gameType === 'oneword' ? 'text-purple-400' : 'text-pink-400';
-              const timeSince = Date.now() - e.createdAt;
-              const minutesAgo = Math.floor(timeSince / 60000);
-              const hoursAgo = Math.floor(timeSince / 3600000);
-              const daysAgo = Math.floor(timeSince / 86400000);
-              const timeLabel = daysAgo > 0 ? `${daysAgo}d ago` : hoursAgo > 0 ? `${hoursAgo}h ago` : minutesAgo > 0 ? `${minutesAgo}m ago` : 'just now';
-              
-              return (
-                <div 
-                  key={i} 
-                  className="group px-2 py-1.5 sm:px-3 sm:py-2 flex items-center gap-2 sm:gap-3 border-t first:border-0 border-white/10 hover:bg-white/5 transition-colors cursor-default" 
-                  role="listitem"
-                >
-                  {/* Avatar */}
-                  <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                    <div 
-                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[8px] sm:text-[9px] font-bold"
-                      style={{ backgroundColor: getAvatarColor(e.userHandle) }}
-                    >
-                      {getInitials(e.userHandle)}
-                    </div>
-                  </div>
-
-                  {/* Activity format */}
-                  <div className="flex-1 min-w-0 text-[10px] sm:text-xs text-white/90 leading-relaxed">
-                    <span className="font-mono font-semibold text-white">{e.userHandle}</span>
-                    {' '}played{' '}
-                    <span className={`font-medium ${gameColor}`}>{gameLabel}</span>
-                    {' '}in{' '}
-                    <span className="font-mono font-semibold text-green-400">
-                      {(e.scoreValue / 1000).toFixed(2)}s
-                    </span>
-                  </div>
-                  
-                  {/* Time ago */}
-                  <div className="text-[9px] sm:text-[10px] text-white/50 flex-shrink-0">
-                    {timeLabel}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-
       {/* Leaderboard */}
-      <div className="w-full max-w-6xl mb-32">
+      <div className="w-full max-w-6xl">
         <div className="flex items-center gap-4 mb-3">
           <h2 className="font-semibold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm sm:text-base">All-Time Top 10</h2>
           <div className="flex gap-2">
@@ -559,6 +505,60 @@ export default function HomeContent({
             )}
           </div>
         )}
+      </div>
+
+      {/* Recent Activity History */}
+      <div className="w-full max-w-6xl mb-32">
+        <h2 className="font-semibold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm sm:text-base mb-3">Recent Activity (Last 50)</h2>
+        <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm max-h-[400px] overflow-y-auto" role="list">
+          {historyEntries.length === 0 ? (
+            <div className="p-3 sm:p-4 text-xs sm:text-sm text-white/80">No activity yet. Be the first!</div>
+          ) : (
+            historyEntries.map((e, i) => {
+              const gameLabel = e.gameType === 'puzzle' ? 'Speed Challenge' : e.gameType === 'oneword' ? 'One-Word' : 'TypeRacer';
+              const gameColor = e.gameType === 'puzzle' ? 'text-blue-400' : e.gameType === 'oneword' ? 'text-purple-400' : 'text-pink-400';
+              const timeSince = Date.now() - e.createdAt;
+              const minutesAgo = Math.floor(timeSince / 60000);
+              const hoursAgo = Math.floor(timeSince / 3600000);
+              const daysAgo = Math.floor(timeSince / 86400000);
+              const timeLabel = daysAgo > 0 ? `${daysAgo}d ago` : hoursAgo > 0 ? `${hoursAgo}h ago` : minutesAgo > 0 ? `${minutesAgo}m ago` : 'just now';
+              
+              return (
+                <div 
+                  key={i} 
+                  className="group px-2 py-1.5 sm:px-3 sm:py-2 flex items-center gap-2 sm:gap-3 border-t first:border-0 border-white/10 hover:bg-white/5 transition-colors cursor-default" 
+                  role="listitem"
+                >
+                  {/* Avatar */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                    <div 
+                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[8px] sm:text-[9px] font-bold"
+                      style={{ backgroundColor: getAvatarColor(e.userHandle) }}
+                    >
+                      {getInitials(e.userHandle)}
+                    </div>
+                  </div>
+
+                  {/* Activity format */}
+                  <div className="flex-1 min-w-0 text-[10px] sm:text-xs text-white/90 leading-relaxed">
+                    <span className="font-mono font-semibold text-white">{e.userHandle}</span>
+                    {' '}played{' '}
+                    <span className={`font-medium ${gameColor}`}>{gameLabel}</span>
+                    {' '}in{' '}
+                    <span className="font-mono font-semibold text-green-400">
+                      {(e.scoreValue / 1000).toFixed(2)}s
+                    </span>
+                  </div>
+                  
+                  {/* Time ago */}
+                  <div className="text-[9px] sm:text-[10px] text-white/50 flex-shrink-0">
+                    {timeLabel}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );
