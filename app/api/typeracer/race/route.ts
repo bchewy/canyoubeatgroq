@@ -64,7 +64,7 @@ async function raceModel(word: string, config: ModelConfig) {
     await generateText({
       model,
       prompt: `Type this word: ${word}`,
-      maxOutputTokens: 5,
+      maxOutputTokens: 16,
     });
     const timeMs = Date.now() - t0;
     return {

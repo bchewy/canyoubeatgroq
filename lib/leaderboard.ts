@@ -1,4 +1,4 @@
-import type { LeaderboardEntry, OneWordLeaderboardEntry } from "@/lib/types";
+import type { LeaderboardEntry, OneWordLeaderboardEntry, TypeRacerLeaderboardEntry, HistoryEntry } from "@/lib/types";
 import { supabaseAdmin, supabasePublic } from "@/lib/db";
 
 export async function addLeaderboard(seed: string, entry: LeaderboardEntry) {
@@ -170,4 +170,113 @@ export async function getOneWordLeaderboard(limit = 50): Promise<OneWordLeaderbo
     .slice(0, limit);
 }
 
+export async function addTypeRacerLeaderboard(entry: {
+  userHandle: string;
+  word: string;
+  userTimeMs: number;
+  aiModelsBeaten: string[];
+}) {
+  const sb = supabaseAdmin();
+  if (!sb) throw new Error("Supabase service role key missing");
+
+  const { error } = await sb.from("typeracer_leaderboard_results").insert({
+    user_handle: entry.userHandle,
+    word: entry.word,
+    user_time_ms: entry.userTimeMs,
+    ai_models_beaten: entry.aiModelsBeaten,
+    num_ai_beaten: entry.aiModelsBeaten.length,
+  });
+  
+  if (error) throw error;
+}
+
+export async function getTypeRacerLeaderboard(limit = 50): Promise<TypeRacerLeaderboardEntry[]> {
+  const sb = supabasePublic() || supabaseAdmin();
+  if (!sb) throw new Error("Supabase URL or anon key missing");
+
+  // Fetch all entries, sorted by speed (fastest first)
+  const { data, error } = await sb
+    .from("typeracer_leaderboard_results")
+    .select("user_handle, word, user_time_ms, ai_models_beaten, num_ai_beaten, created_at")
+    .order("user_time_ms", { ascending: true })
+    .order("num_ai_beaten", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  // Group by user and keep their best entry
+  const userBest = new Map<string, TypeRacerLeaderboardEntry>();
+  (data || []).forEach((r) => {
+    const handle = r.user_handle as string;
+    const entry: TypeRacerLeaderboardEntry = {
+      userHandle: handle,
+      word: r.word as string,
+      userTimeMs: r.user_time_ms as number,
+      aiModelsBeaten: r.ai_models_beaten as string[],
+      numAiBeaten: r.num_ai_beaten as number,
+      createdAt: new Date(r.created_at as string).getTime(),
+    };
+    
+    if (!userBest.has(handle)) {
+      userBest.set(handle, entry);
+    }
+  });
+
+  // Return top N users sorted by speed (fastest first)
+  return Array.from(userBest.values())
+    .sort((a, b) => {
+      if (a.userTimeMs !== b.userTimeMs) return a.userTimeMs - b.userTimeMs;
+      if (b.numAiBeaten !== a.numAiBeaten) return b.numAiBeaten - a.numAiBeaten;
+      return b.createdAt - a.createdAt;
+    })
+    .slice(0, limit);
+}
+
+export async function insertHistoryEntry(entry: HistoryEntry) {
+  console.log("[insertHistoryEntry] Attempting to insert:", {
+    userHandle: entry.userHandle,
+    gameType: entry.gameType,
+    scoreValue: entry.scoreValue,
+    createdAt: entry.createdAt,
+  });
+  
+  const sb = supabaseAdmin();
+  if (!sb) {
+    console.error("[insertHistoryEntry] Supabase admin client not available");
+    throw new Error("Supabase service role key missing");
+  }
+
+  const { data, error } = await sb.from("history").insert({
+    user_handle: entry.userHandle,
+    game_type: entry.gameType,
+    score_value: entry.scoreValue,
+  }).select();
+  
+  if (error) {
+    console.error("[insertHistoryEntry] Database error:", error);
+    throw error;
+  }
+  
+  console.log("[insertHistoryEntry] Successfully inserted:", data);
+}
+
+export async function getHistory(limit = 50): Promise<HistoryEntry[]> {
+  const sb = supabasePublic() || supabaseAdmin();
+  if (!sb) throw new Error("Supabase URL or anon key missing");
+
+  const { data, error } = await sb
+    .from("history")
+    .select("user_handle, game_type, score_value, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  return (data || []).map((r) => ({
+    userHandle: r.user_handle as string,
+    gameType: r.game_type as 'puzzle' | 'oneword' | 'typeracer',
+    scoreValue: r.score_value as number,
+    createdAt: new Date(r.created_at as string).getTime(),
+  }));
+}
 

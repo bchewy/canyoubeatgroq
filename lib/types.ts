@@ -64,3 +64,19 @@ export type OneWordLeaderboardEntry = {
   createdAt: number;
 };
 
+export type TypeRacerLeaderboardEntry = {
+  userHandle: string;
+  word: string;
+  userTimeMs: number;
+  aiModelsBeaten: string[];
+  numAiBeaten: number;
+  createdAt: number;
+};
+
+export type HistoryEntry = {
+  userHandle: string;
+  gameType: 'puzzle' | 'oneword' | 'typeracer';
+  scoreValue: number;
+  createdAt: number;
+};
+

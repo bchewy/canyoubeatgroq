@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { addOneWordLeaderboard } from "@/lib/leaderboard";
+import { addOneWordLeaderboard, insertHistoryEntry } from "@/lib/leaderboard";
 
 export const runtime = "nodejs";
 
@@ -200,6 +200,26 @@ Please reason through whether each answer is correct or acceptable. Then provide
           aiModelsBeaten,
         });
         console.log(`[judge] Saved to leaderboard: ${userHandle} beat ${aiModelsBeaten.length} AI models`);
+        
+        // Save to history
+        console.log("[judge] Saving to history for oneword game:", {
+          userHandle,
+          gameType: 'oneword',
+          scoreValue: userTimeMs,
+          createdAt: Date.now(),
+        });
+        try {
+          await insertHistoryEntry({
+            userHandle,
+            gameType: 'oneword',
+            scoreValue: userTimeMs,
+            createdAt: Date.now(),
+          });
+          console.log("[judge] Successfully saved to history");
+        } catch (historyError) {
+          console.error("[judge] Failed to save to history:", historyError);
+          console.error("[judge] Error details:", JSON.stringify(historyError, null, 2));
+        }
       } catch (leaderboardError) {
         // Don't fail the whole request if leaderboard save fails
         console.error("[judge] Failed to save to leaderboard:", leaderboardError);

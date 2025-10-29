@@ -42,7 +42,10 @@ export default function TypeRacerPage() {
   const [finishTime, setFinishTime] = useState<number | null>(null);
   const [racers, setRacers] = useState<RacerProgress[]>([]);
   const [aiResultsLoading, setAiResultsLoading] = useState(false);
+  const [handle, setHandle] = useState("");
+  const [savedToLb, setSavedToLb] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const handleInputRef = useRef<HTMLInputElement>(null);
 
   const startGame = useCallback(() => {
     // Pick random word
@@ -51,6 +54,7 @@ export default function TypeRacerPage() {
     setUserInput("");
     setFinishTime(null);
     setRacers([]);
+    setSavedToLb(false);
     
     // Start countdown
     setGameState("countdown");
@@ -144,19 +148,97 @@ export default function TypeRacerPage() {
     if (value === word) {
       const elapsed = Date.now() - startTime!;
       
+      console.log("[typeracer-frontend] Race finished!", {
+        elapsed,
+        word,
+        racers: racers.map(r => ({ model: r.model, finishTime: r.finishTime })),
+      });
+      
       setFinishTime(elapsed);
       setGameState("finished");
       
       // Check if user won
       const userWon = racers.every(r => elapsed < (r.finishTime || Infinity));
+      console.log("[typeracer-frontend] userWon:", userWon);
+      
       if (userWon) {
         const reduce = typeof window !== "undefined" && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (!reduce) {
           confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
         }
       }
+      
+      // Auto-submit to history with current or default handle
+      setTimeout(() => {
+        const handleToUse = handle.trim() || "anonymous";
+        console.log("[typeracer-frontend] Auto-submitting with handle:", handleToUse);
+        
+        fetch("/api/typeracer/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userHandle: handleToUse,
+            word,
+            userTimeMs: elapsed,
+            aiResults: racers.map(r => ({ model: r.model, timeMs: r.finishTime })),
+          }),
+        })
+          .then(res => res.json())
+          .then(data => {
+            console.log("[typeracer-frontend] Auto-submit response:", data);
+            if (data.success && userWon) {
+              setSavedToLb(true);
+            }
+          })
+          .catch(err => {
+            console.error("[typeracer-frontend] Auto-submit failed:", err);
+          });
+      }, 500);
     }
-  }, [gameState, word, startTime, racers]);
+  }, [gameState, word, startTime, racers, handle]);
+
+  const submitResult = useCallback(async () => {
+    console.log("[typeracer-frontend] submitResult called", {
+      handle: handle,
+      handleTrimmed: handle.trim(),
+      finishTime,
+      savedToLb,
+      shouldReturn: !handle.trim() || !finishTime || savedToLb,
+    });
+    
+    if (!handle.trim() || !finishTime || savedToLb) {
+      console.log("[typeracer-frontend] submitResult early return");
+      return;
+    }
+
+    console.log("[typeracer-frontend] Attempting to submit to API");
+    try {
+      const response = await fetch("/api/typeracer/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userHandle: handle,
+          word,
+          userTimeMs: finishTime,
+          aiResults: racers.map(r => ({ model: r.model, timeMs: r.finishTime })),
+        }),
+      });
+
+      console.log("[typeracer-frontend] Response status:", response.status);
+      const data = await response.json();
+      console.log("[typeracer-frontend] Response data:", data);
+      
+      if (data.success) {
+        console.log("[typeracer-frontend] Setting savedToLb to true");
+        setSavedToLb(true);
+      } else {
+        console.warn("[typeracer-frontend] Submit succeeded but data.success is false");
+      }
+    } catch (err) {
+      console.error("[typeracer-frontend] Failed to submit result:", err);
+      console.error("[typeracer-frontend] Error stack:", err instanceof Error ? err.stack : "N/A");
+    }
+  }, [handle, word, finishTime, racers, savedToLb]);
 
   const userProgress = word ? (userInput.length / word.length) * 100 : 0;
   const allRacersWithUser = [
@@ -168,6 +250,8 @@ export default function TypeRacerPage() {
     if (b.finished) return 1;
     return b.progress - a.progress;
   });
+
+  const userWon = gameState === "finished" && allRacersWithUser[0]?.model === "You";
 
   return (
     <div className="min-h-screen p-4 sm:p-6 pb-64 flex flex-col items-center gap-4 sm:gap-6">
@@ -303,7 +387,16 @@ export default function TypeRacerPage() {
             </div>
 
             {/* Results */}
-            {gameState === "finished" && (
+            {gameState === "finished" && (() => {
+              console.log("[typeracer-frontend] Rendering results section", {
+                gameState,
+                savedToLb,
+                finishTime,
+                handle,
+                userWon: allRacersWithUser[0]?.model === "You",
+              });
+              return true;
+            })() && (
               <div className="space-y-4 relative z-20">
                 <div className={`border rounded-lg p-6 backdrop-blur-sm ${
                   allRacersWithUser[0].model === "You"
@@ -324,6 +417,49 @@ export default function TypeRacerPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Handle input for all players */}
+                {!savedToLb && (
+                  <div className="border border-orange-500/40 rounded-lg p-6 bg-black/40 backdrop-blur-sm">
+                    <div className="text-white mb-3">
+                      <div className="text-lg font-semibold mb-1">{userWon ? "Save to Leaderboard" : "Save Your Time"}</div>
+                      <p className="text-sm text-white/70">
+                        Enter your handle to save your time to history!
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        ref={handleInputRef}
+                        type="text"
+                        value={handle}
+                        onChange={(e) => setHandle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && handle.trim()) {
+                            submitResult();
+                          }
+                        }}
+                        placeholder="Your handle"
+                        className="flex-1 px-4 py-2 border border-white/20 rounded-md bg-black/20 text-white placeholder:text-white/50"
+                        maxLength={32}
+                      />
+                      <button
+                        onClick={submitResult}
+                        disabled={!handle.trim()}
+                        className="px-6 py-2 rounded-md bg-[var(--accent)] text-white shadow-[0_6px_20px_rgba(255,92,57,.25)] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {savedToLb && (
+                  <div className="border border-green-500/40 rounded-lg p-4 bg-green-950/30 backdrop-blur-sm">
+                    <div className="text-green-400 font-semibold">
+                      ✓ Saved to leaderboard!
+                    </div>
+                  </div>
+                )}
 
                 {/* Full Results Leaderboard */}
                 <div className="border border-white/20 rounded-lg p-4 bg-black/30 backdrop-blur-sm">

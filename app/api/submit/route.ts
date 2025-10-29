@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyStartToken } from "@/lib/hmac";
 import { getProblemById } from "@/lib/problems";
 import { normalizeAnswer } from "@/lib/normalize";
-import { addLeaderboard } from "@/lib/leaderboard";
+import { addLeaderboard, insertHistoryEntry } from "@/lib/leaderboard";
 import { solveWithAllModels } from "@/lib/ai";
 import { selectGeneratedProblemForSeed } from "@/lib/questionBanks";
 
@@ -148,8 +148,8 @@ export async function POST(req: Request) {
 
     // Save leaderboard entry for each model beaten
     let savedToLb = false;
+    const handle = sanitizeHandle(desiredHandle);
     if (anyWin) {
-      const handle = sanitizeHandle(desiredHandle);
       for (const modelResult of modelResults) {
         if (modelResult.beaten && modelResult.winMarginMs > 0) {
           const entry = {
@@ -165,6 +165,26 @@ export async function POST(req: Request) {
           savedToLb = true;
         }
       }
+    }
+    
+    // Save to history (always save for correct answers, regardless of win/loss)
+    console.log("[submit] Saving to history for puzzle game:", {
+      userHandle: handle,
+      gameType: 'puzzle',
+      scoreValue: userTimeMs,
+      createdAt: now,
+    });
+    try {
+      await insertHistoryEntry({
+        userHandle: handle,
+        gameType: 'puzzle',
+        scoreValue: userTimeMs,
+        createdAt: now,
+      });
+      console.log("[submit] Successfully saved to history");
+    } catch (historyError) {
+      console.error("[submit] Failed to save to history:", historyError);
+      console.error("[submit] Error details:", JSON.stringify(historyError, null, 2));
     }
 
     return NextResponse.json({ 

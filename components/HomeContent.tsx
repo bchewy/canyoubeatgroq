@@ -23,6 +23,22 @@ type OneWordLeaderboardEntry = {
   createdAt: number;
 };
 
+type TypeRacerLeaderboardEntry = {
+  userHandle: string;
+  word: string;
+  userTimeMs: number;
+  aiModelsBeaten: string[];
+  numAiBeaten: number;
+  createdAt: number;
+};
+
+type HistoryEntry = {
+  userHandle: string;
+  gameType: 'puzzle' | 'oneword' | 'typeracer';
+  scoreValue: number;
+  createdAt: number;
+};
+
 // Simple hash function to generate consistent color from username
 function getAvatarColor(name: string): string {
   let hash = 0;
@@ -90,13 +106,17 @@ function getModelDisplayName(modelName: string): string {
 
 export default function HomeContent({ 
   speedEntries, 
-  oneWordEntries 
+  oneWordEntries,
+  typeRacerEntries,
+  historyEntries
 }: { 
   speedEntries: LeaderboardEntry[];
   oneWordEntries: OneWordLeaderboardEntry[];
+  typeRacerEntries: TypeRacerLeaderboardEntry[];
+  historyEntries: HistoryEntry[];
 }) {
   const [allowAllModels, setAllowAllModels] = useState(false);
-  const [activeTab, setActiveTab] = useState<"speed" | "oneword">("speed");
+  const [activeTab, setActiveTab] = useState<"speed" | "oneword" | "typeracer">("speed");
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-8 pt-12 sm:pt-16 pb-32 gap-6 sm:gap-8">
@@ -238,6 +258,60 @@ export default function HomeContent({
         </div>
       </div>
 
+      {/* Recent Activity History */}
+      <div className="w-full max-w-6xl">
+        <h2 className="font-semibold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm sm:text-base mb-3">Recent Activity (Last 50)</h2>
+        <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm max-h-[400px] overflow-y-auto" role="list">
+          {historyEntries.length === 0 ? (
+            <div className="p-3 sm:p-4 text-xs sm:text-sm text-white/80">No activity yet. Be the first!</div>
+          ) : (
+            historyEntries.map((e, i) => {
+              const gameLabel = e.gameType === 'puzzle' ? 'Speed Challenge' : e.gameType === 'oneword' ? 'One-Word' : 'TypeRacer';
+              const gameColor = e.gameType === 'puzzle' ? 'text-blue-400' : e.gameType === 'oneword' ? 'text-purple-400' : 'text-pink-400';
+              const timeSince = Date.now() - e.createdAt;
+              const minutesAgo = Math.floor(timeSince / 60000);
+              const hoursAgo = Math.floor(timeSince / 3600000);
+              const daysAgo = Math.floor(timeSince / 86400000);
+              const timeLabel = daysAgo > 0 ? `${daysAgo}d ago` : hoursAgo > 0 ? `${hoursAgo}h ago` : minutesAgo > 0 ? `${minutesAgo}m ago` : 'just now';
+              
+              return (
+                <div 
+                  key={i} 
+                  className="group px-2 py-1.5 sm:px-3 sm:py-2 flex items-center gap-2 sm:gap-3 border-t first:border-0 border-white/10 hover:bg-white/5 transition-colors cursor-default" 
+                  role="listitem"
+                >
+                  {/* Avatar */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                    <div 
+                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[8px] sm:text-[9px] font-bold"
+                      style={{ backgroundColor: getAvatarColor(e.userHandle) }}
+                    >
+                      {getInitials(e.userHandle)}
+                    </div>
+                  </div>
+
+                  {/* Activity format */}
+                  <div className="flex-1 min-w-0 text-[10px] sm:text-xs text-white/90 leading-relaxed">
+                    <span className="font-mono font-semibold text-white">{e.userHandle}</span>
+                    {' '}played{' '}
+                    <span className={`font-medium ${gameColor}`}>{gameLabel}</span>
+                    {' '}in{' '}
+                    <span className="font-mono font-semibold text-green-400">
+                      {(e.scoreValue / 1000).toFixed(2)}s
+                    </span>
+                  </div>
+                  
+                  {/* Time ago */}
+                  <div className="text-[9px] sm:text-[10px] text-white/50 flex-shrink-0">
+                    {timeLabel}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
       {/* Leaderboard */}
       <div className="w-full max-w-6xl mb-32">
         <div className="flex items-center gap-4 mb-3">
@@ -262,6 +336,16 @@ export default function HomeContent({
               }`}
             >
               One-Word
+            </button>
+            <button
+              onClick={() => setActiveTab("typeracer")}
+              className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                activeTab === "typeracer"
+                  ? "bg-[var(--accent)] text-white shadow-[0_4px_12px_rgba(255,92,57,.3)]"
+                  : "bg-white/10 text-white/70 hover:bg-white/15"
+              }`}
+            >
+              TypeRacer
             </button>
           </div>
         </div>
@@ -398,6 +482,72 @@ export default function HomeContent({
                       </span>
                       {' '}on{' '}
                       <span className="text-orange-400 font-semibold">&quot;{e.topic}&quot;</span>
+                      {' '}in{' '}
+                      <span className="font-mono font-semibold text-green-400">
+                        {(e.userTimeMs / 1000).toFixed(2)}s
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* TypeRacer Leaderboard */}
+        {activeTab === "typeracer" && (
+          <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm" role="list">
+            {typeRacerEntries.length === 0 ? (
+              <div className="p-3 sm:p-4 text-xs sm:text-sm text-white/80">Be first. Set the pace.</div>
+            ) : (
+              typeRacerEntries.map((e, i) => {
+                const models = e.aiModelsBeaten.map(m => getModelDisplayName(m));
+                
+                return (
+                  <div 
+                    key={i} 
+                    className="group px-2 py-1.5 sm:px-3 sm:py-2 flex items-center gap-2 sm:gap-3 border-t first:border-0 border-white/10 hover:bg-white/5 transition-colors cursor-default" 
+                    role="listitem"
+                  >
+                    {/* Rank + Avatar */}
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                      <span className="w-3 sm:w-4 text-right text-white font-bold text-[10px] sm:text-xs">
+                        {i + 1}
+                      </span>
+                      <div 
+                        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[8px] sm:text-[9px] font-bold"
+                        style={{ backgroundColor: getAvatarColor(e.userHandle) }}
+                      >
+                        {getInitials(e.userHandle)}
+                      </div>
+                    </div>
+
+                    {/* Story format */}
+                    <div className="flex-1 min-w-0 text-[10px] sm:text-xs text-white/90 leading-relaxed">
+                      <span className="font-mono font-semibold text-white">{e.userHandle}</span>
+                      {' '}beat{' '}
+                      <span className="inline-flex items-center gap-1 relative group/models">
+                        <span className="inline-flex items-center gap-0.5">
+                          {models.slice(0, 3).map((model, idx) => (
+                            <ModelIcon key={idx} modelName={model} className="w-2.5 h-2.5 inline-block" />
+                          ))}
+                        </span>
+                        <span className="text-white/80 font-medium cursor-help">
+                          {e.numAiBeaten} {e.numAiBeaten === 1 ? 'model' : 'models'}
+                        </span>
+                        {models.length > 0 && (
+                          <span className="invisible group-hover/models:visible absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-black/95 border border-white/20 rounded text-[10px] text-white/90 whitespace-nowrap z-50 pointer-events-none">
+                            {models.map((model, idx) => (
+                              <span key={idx} className="flex items-center gap-1.5 min-w-0">
+                                <ModelIcon modelName={model} className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{model}</span>
+                              </span>
+                            ))}
+                          </span>
+                        )}
+                      </span>
+                      {' '}typing{' '}
+                      <span className="text-orange-400 font-semibold">&quot;{e.word}&quot;</span>
                       {' '}in{' '}
                       <span className="font-mono font-semibold text-green-400">
                         {(e.userTimeMs / 1000).toFixed(2)}s
