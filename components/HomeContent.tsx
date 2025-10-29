@@ -510,7 +510,7 @@ export default function HomeContent({
       {/* Recent Activity History */}
       <div className="w-full max-w-6xl mb-32">
         <h2 className="font-semibold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,.45)] text-sm sm:text-base mb-3">Recent Activity (Last 50)</h2>
-        <div className="border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm max-h-[400px] overflow-y-auto" role="list">
+        <div className="custom-scrollbar border border-white/20 rounded-lg bg-black/30 backdrop-blur-sm max-h-[400px] overflow-y-auto" role="list">
           {historyEntries.length === 0 ? (
             <div className="p-3 sm:p-4 text-xs sm:text-sm text-white/80">No activity yet. Be the first!</div>
           ) : (
