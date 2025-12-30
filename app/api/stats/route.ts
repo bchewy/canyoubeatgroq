@@ -14,53 +14,35 @@ export async function GET() {
   }
 
   try {
-    // Get total coding challenges completed
-    const { count: codingChallenges } = await supabase
-      .from("leaderboard_results")
-      .select("*", { count: "exact", head: true });
+    // Use efficient RPC function with COUNT(DISTINCT) - returns only integers, no row data
+    const { data, error } = await supabase.rpc("get_game_stats");
 
-    // Get total typeracer races
-    const { count: typeracerRaces } = await supabase
-      .from("typeracer_leaderboard_results")
-      .select("*", { count: "exact", head: true });
+    if (error) throw error;
 
-    // Get total oneword challenges
-    const { count: onewordChallenges } = await supabase
-      .from("oneword_leaderboard_results")
-      .select("*", { count: "exact", head: true });
-
-    // Get unique players across all games
-    const [codingPlayers, typeracerPlayers, onewordPlayers] =
-      await Promise.all([
-        supabase
-          .from("leaderboard_results")
-          .select("user_handle", { count: "exact" }),
-        supabase
-          .from("typeracer_leaderboard_results")
-          .select("user_handle", { count: "exact" }),
-        supabase
-          .from("oneword_leaderboard_results")
-          .select("user_handle", { count: "exact" }),
-      ]);
-
-    // Combine and count unique players
-    const allPlayers = new Set([
-      ...(codingPlayers.data?.map((p) => p.user_handle) || []),
-      ...(typeracerPlayers.data?.map((p) => p.user_handle) || []),
-      ...(onewordPlayers.data?.map((p) => p.user_handle) || []),
-    ]);
+    const stats = data?.[0] || {
+      coding_challenges: 0,
+      typeracer_races: 0,
+      oneword_challenges: 0,
+      coding_players: 0,
+      typeracer_players: 0,
+      oneword_players: 0,
+      total_unique_players: 0,
+    };
 
     const totalChallenges =
-      (codingChallenges || 0) +
-      (typeracerRaces || 0) +
-      (onewordChallenges || 0);
+      Number(stats.coding_challenges || 0) +
+      Number(stats.typeracer_races || 0) +
+      Number(stats.oneword_challenges || 0);
+
+    // True unique players across all games (computed by SQL UNION + COUNT DISTINCT)
+    const totalPlayers = Number(stats.total_unique_players || 0);
 
     return NextResponse.json({
       totalChallenges,
-      totalPlayers: allPlayers.size,
-      codingChallenges: codingChallenges || 0,
-      typeracerRaces: typeracerRaces || 0,
-      onewordChallenges: onewordChallenges || 0,
+      totalPlayers,
+      codingChallenges: Number(stats.coding_challenges || 0),
+      typeracerRaces: Number(stats.typeracer_races || 0),
+      onewordChallenges: Number(stats.oneword_challenges || 0),
     });
   } catch (error) {
     console.error("Error fetching stats:", error);

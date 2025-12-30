@@ -1,7 +1,7 @@
 import { getLeaderboard, getOneWordLeaderboard, getTypeRacerLeaderboard, getHistory } from "@/lib/leaderboard";
 import HomeContent from "@/components/HomeContent";
 
-export const revalidate = 60;
+export const revalidate = 300; // 5 minutes - reduced from 60s to minimize DB egress
 
 export default async function Home() {
   const speedEntries = await getLeaderboard(10);

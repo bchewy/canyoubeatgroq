@@ -36,67 +36,28 @@ export async function getLeaderboard(limit = 50): Promise<LeaderboardEntry[]> {
   const sb = supabasePublic() || supabaseAdmin();
   if (!sb) throw new Error("Supabase URL or anon key missing");
 
-  // Fetch ALL entries, sorted by performance
-  const { data, error } = await sb
-    .from("leaderboard_results")
-    .select("user_handle, win_margin_ms, user_time_ms, ai_time_ms, ai_model, problem_id, created_at")
-    .order("win_margin_ms", { ascending: false })
-    .order("user_time_ms", { ascending: true })
-    .order("created_at", { ascending: false });
+  // Use efficient RPC function with DISTINCT ON (no full table scan)
+  const { data, error } = await sb.rpc("get_top_leaderboard", { lim: limit });
 
   if (error) throw error;
 
-  // Group by user and collect all their entries
-  const userEntries = new Map<string, LeaderboardEntry[]>();
-  (data || []).forEach((r) => {
-    const handle = r.user_handle as string;
-    const entry: LeaderboardEntry = {
-      userHandle: handle,
-      winMarginMs: r.win_margin_ms as number,
-      userTimeMs: r.user_time_ms as number,
-      aiTimeMs: r.ai_time_ms as number,
-      aiModel: r.ai_model as string,
-      problemId: r.problem_id as string,
-      createdAt: new Date(r.created_at as string).getTime(),
-    };
-    
-    if (!userEntries.has(handle)) {
-      userEntries.set(handle, []);
-    }
-    userEntries.get(handle)!.push(entry);
-  });
-
-  // For each user, find their best entry and aggregate all models beaten
-  const seen = new Map<string, LeaderboardEntry>();
-  userEntries.forEach((entries, handle) => {
-    // Sort user's entries by win margin to find their best
-    const sorted = entries.sort((a, b) => {
-      if (b.winMarginMs !== a.winMarginMs) return b.winMarginMs - a.winMarginMs;
-      if (a.userTimeMs !== b.userTimeMs) return a.userTimeMs - b.userTimeMs;
-      return b.createdAt - a.createdAt;
-    });
-    
-    // Use the best entry as the base, but collect all models beaten
-    const best = sorted[0];
-    const allModels = entries.map(e => e.aiModel);
-    const uniqueModels = Array.from(new Set(allModels)).sort();
-    
-    // Store best entry with aggregated model info
-    // We'll use a special format: "model1,model2,model3" if multiple
-    seen.set(handle, {
-      ...best,
-      aiModel: uniqueModels.length > 1 ? uniqueModels.join(',') : uniqueModels[0],
-    });
-  });
-
-  // Sort by win margin and return top N
-  return Array.from(seen.values())
-    .sort((a, b) => {
-      if (b.winMarginMs !== a.winMarginMs) return b.winMarginMs - a.winMarginMs;
-      if (a.userTimeMs !== b.userTimeMs) return a.userTimeMs - b.userTimeMs;
-      return b.createdAt - a.createdAt;
-    })
-    .slice(0, limit);
+  return (data || []).map((r: {
+    user_handle: string;
+    win_margin_ms: number;
+    user_time_ms: number;
+    ai_time_ms: number;
+    problem_id: string;
+    created_at: string;
+    all_models: string;
+  }) => ({
+    userHandle: r.user_handle,
+    winMarginMs: r.win_margin_ms,
+    userTimeMs: r.user_time_ms,
+    aiTimeMs: r.ai_time_ms,
+    aiModel: r.all_models, // Already aggregated by the SQL function
+    problemId: r.problem_id,
+    createdAt: new Date(r.created_at).getTime(),
+  }));
 }
 
 export async function addOneWordLeaderboard(entry: {
@@ -131,38 +92,29 @@ export async function getOneWordLeaderboard(limit = 50): Promise<OneWordLeaderbo
   const sb = supabasePublic() || supabaseAdmin();
   if (!sb) throw new Error("Supabase URL or anon key missing");
 
-  // Fetch all correct entries, sorted by performance (speed first)
-  const { data, error } = await sb
-    .from("oneword_leaderboard_results")
-    .select("user_handle, topic, user_time_ms, ai_models_beaten, num_ai_beaten, created_at")
-    .eq("user_correct", true)
-    .order("user_time_ms", { ascending: true })
-    .order("num_ai_beaten", { ascending: false })
-    .order("created_at", { ascending: false });
+  // Use efficient RPC function with DISTINCT ON (no full table scan)
+  const { data, error } = await sb.rpc("get_top_oneword_leaderboard", { lim: limit });
 
   if (error) throw error;
 
-  // Group by user and keep their best entry
-  const userBest = new Map<string, OneWordLeaderboardEntry>();
-  (data || []).forEach((r) => {
-    const handle = r.user_handle as string;
-    const entry: OneWordLeaderboardEntry = {
-      userHandle: handle,
-      topic: r.topic as string,
-      userTimeMs: r.user_time_ms as number,
-      aiModelsBeaten: r.ai_models_beaten as string[],
-      numAiBeaten: r.num_ai_beaten as number,
-      createdAt: new Date(r.created_at as string).getTime(),
-    };
-    
-    if (!userBest.has(handle)) {
-      userBest.set(handle, entry);
-    }
-  });
-
-  // Return top N users sorted by performance (speed first, then AIs beaten)
-  return Array.from(userBest.values())
-    .sort((a, b) => {
+  // RPC returns one entry per user, but we still need final sort + limit
+  return (data || [])
+    .map((r: {
+      user_handle: string;
+      topic: string;
+      user_time_ms: number;
+      ai_models_beaten: string[];
+      num_ai_beaten: number;
+      created_at: string;
+    }) => ({
+      userHandle: r.user_handle,
+      topic: r.topic,
+      userTimeMs: r.user_time_ms,
+      aiModelsBeaten: r.ai_models_beaten,
+      numAiBeaten: r.num_ai_beaten,
+      createdAt: new Date(r.created_at).getTime(),
+    }))
+    .sort((a: OneWordLeaderboardEntry, b: OneWordLeaderboardEntry) => {
       if (a.userTimeMs !== b.userTimeMs) return a.userTimeMs - b.userTimeMs;
       if (b.numAiBeaten !== a.numAiBeaten) return b.numAiBeaten - a.numAiBeaten;
       return b.createdAt - a.createdAt;
@@ -194,37 +146,29 @@ export async function getTypeRacerLeaderboard(limit = 50): Promise<TypeRacerLead
   const sb = supabasePublic() || supabaseAdmin();
   if (!sb) throw new Error("Supabase URL or anon key missing");
 
-  // Fetch all entries, sorted by speed (fastest first)
-  const { data, error } = await sb
-    .from("typeracer_leaderboard_results")
-    .select("user_handle, word, user_time_ms, ai_models_beaten, num_ai_beaten, created_at")
-    .order("user_time_ms", { ascending: true })
-    .order("num_ai_beaten", { ascending: false })
-    .order("created_at", { ascending: false });
+  // Use efficient RPC function with DISTINCT ON (no full table scan)
+  const { data, error } = await sb.rpc("get_top_typeracer_leaderboard", { lim: limit });
 
   if (error) throw error;
 
-  // Group by user and keep their best entry
-  const userBest = new Map<string, TypeRacerLeaderboardEntry>();
-  (data || []).forEach((r) => {
-    const handle = r.user_handle as string;
-    const entry: TypeRacerLeaderboardEntry = {
-      userHandle: handle,
-      word: r.word as string,
-      userTimeMs: r.user_time_ms as number,
-      aiModelsBeaten: r.ai_models_beaten as string[],
-      numAiBeaten: r.num_ai_beaten as number,
-      createdAt: new Date(r.created_at as string).getTime(),
-    };
-    
-    if (!userBest.has(handle)) {
-      userBest.set(handle, entry);
-    }
-  });
-
-  // Return top N users sorted by speed (fastest first)
-  return Array.from(userBest.values())
-    .sort((a, b) => {
+  // RPC returns one entry per user, but we still need final sort + limit
+  return (data || [])
+    .map((r: {
+      user_handle: string;
+      word: string;
+      user_time_ms: number;
+      ai_models_beaten: string[];
+      num_ai_beaten: number;
+      created_at: string;
+    }) => ({
+      userHandle: r.user_handle,
+      word: r.word,
+      userTimeMs: r.user_time_ms,
+      aiModelsBeaten: r.ai_models_beaten,
+      numAiBeaten: r.num_ai_beaten,
+      createdAt: new Date(r.created_at).getTime(),
+    }))
+    .sort((a: TypeRacerLeaderboardEntry, b: TypeRacerLeaderboardEntry) => {
       if (a.userTimeMs !== b.userTimeMs) return a.userTimeMs - b.userTimeMs;
       if (b.numAiBeaten !== a.numAiBeaten) return b.numAiBeaten - a.numAiBeaten;
       return b.createdAt - a.createdAt;
